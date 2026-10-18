@@ -1,0 +1,11 @@
+Model Information:
+* title:	(Free) Xiaomi 17 pro max
+* source:	https://sketchfab.com/3d-models/free-xiaomi-17-pro-max-014f9880c8764d18b3f4f00aac165a5d
+* author:	TahmidTauz (https://sketchfab.com/TahmidTauz)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "(Free) Xiaomi 17 pro max" (https://sketchfab.com/3d-models/free-xiaomi-17-pro-max-014f9880c8764d18b3f4f00aac165a5d) by TahmidTauz (https://sketchfab.com/TahmidTauz) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

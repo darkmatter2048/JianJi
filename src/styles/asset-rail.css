@@ -1,0 +1,253 @@
+/* ==========================================================================
+   Asset rail — 资源 / 设备 / 文字
+   Loaded after app.css; only the left rail's own furniture lives here.
+   ========================================================================== */
+
+/* ------------------------------------------------------- vertical rail -- */
+
+.panel--rail {
+  flex-direction: row;
+}
+
+.rail {
+  flex: 0 0 auto;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 5px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+}
+
+.rail__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 2px 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--fast), color var(--fast);
+}
+
+.rail__item:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+.rail__item--active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.rail__icon {
+  display: flex;
+}
+
+.rail__label {
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.rail__item .ui-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 13px;
+}
+
+/* --------------------------------------------------------------- search -- */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 10px 10px 6px;
+}
+
+.search__icon {
+  position: absolute;
+  left: 19px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+.search__input {
+  padding-left: 26px;
+}
+
+.search__clear {
+  position: absolute;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.search__clear:hover {
+  color: var(--text-0);
+}
+
+.device-card__actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------ accordion -- */
+
+.acc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 12px;
+}
+
+.acc {
+  background: var(--bg-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  transition: border-color var(--fast), background var(--fast);
+}
+
+.acc--selected {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+.acc__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--fast);
+}
+
+.acc__head:hover {
+  background: var(--bg-3);
+}
+
+.acc__chevron {
+  width: 9px;
+  flex: 0 0 auto;
+  color: var(--text-2);
+  font-size: 9px;
+  transition: transform 0.15s;
+}
+
+.acc__glyph {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--bg-4);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.acc__title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.acc__name {
+  color: var(--text-0);
+  font-size: 11.5px;
+}
+
+.acc__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 9px 12px;
+  border-top: 1px solid var(--line-soft);
+  background: var(--bg-1);
+}
+
+.notice {
+  padding: 6px 8px;
+  border-radius: var(--radius-s);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.notice--error {
+  background: var(--danger-soft);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.field--stack .field__label {
+  flex: 0 0 auto;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 4px;
+}
+
+/* ------------------------------------------------------- media library -- */
+
+.resources {
+  min-height: 100%;
+}
+
+.resources--over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.media-card__actions .btn {
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------- viewport backdrop -- */
+
+.viewport__backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.viewport__backdrop > img,
+.viewport__backdrop > video {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.viewport__backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  background: #05070b;
+  pointer-events: none;
+}

@@ -1,0 +1,1233 @@
+/* ==========================================================================
+   简辑 — design system
+   Tokens first, then the component layer built on Radix primitives.
+   Everything here is *skin*: layout lives in app.css / viewport.css / asset-rail.css.
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     Neutral, flat, dense — the palette of a cutting room, not a landing page.
+     Greys carry no hue; one cyan is the only colour, and it is only used for
+     "this is selected / this is primary".
+     ------------------------------------------------------------------------ */
+  --bg-0: #131313;
+  --bg-1: #191919;
+  --bg-2: #1f1f1f;
+  --bg-3: #262626;
+  --bg-4: #2f2f2f;
+  --bg-hover: #2a2a2a;
+
+  --line: #333333;
+  --line-soft: #2a2a2a;
+
+  --text-0: #e6e6e6;
+  --text-1: #a0a0a0;
+  --text-2: #6e6e6e;
+
+  --accent: #00c2d1;
+  --accent-hover: #16d4e2;
+  --accent-soft: rgba(0, 194, 209, 0.14);
+  --accent-line: rgba(0, 194, 209, 0.55);
+  --accent-ink: #04252a;
+  --accent-2: #00c2d1;
+
+  --ok: #34c759;
+  --warn: #ff9f0a;
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.14);
+
+  /* Cutting-room corners: small, almost square. */
+  --radius-s: 3px;
+  --radius-m: 4px;
+  --radius-l: 6px;
+  --radius-pill: 999px;
+
+  /* Depth comes from 1px lines and value steps, not from glow. */
+  --shadow-1: none;
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 10px 30px rgba(0, 0, 0, 0.62);
+  --ring: 0 0 0 1px var(--accent);
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --fast: 110ms var(--ease);
+
+  --topbar-h: 38px;
+  --font: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+/* --------------------------------------------------------------- buttons -- */
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  font-size: 11.5px;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--fast), border-color var(--fast), color var(--fast),
+    box-shadow var(--fast), transform var(--fast);
+}
+
+.ui-btn:hover:not(:disabled) {
+  background: var(--bg-4);
+  border-color: #33333d;
+}
+
+.ui-btn:active:not(:disabled) {
+  background: var(--bg-4);
+}
+
+.ui-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.ui-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.ui-btn--primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+
+.ui-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: transparent;
+}
+
+.ui-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-1);
+}
+
+.ui-btn--ghost:hover:not(:disabled) {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+.ui-btn--ghost.ui-btn--on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ui-btn--outline {
+  background: transparent;
+}
+
+.ui-btn--danger {
+  color: #fca5a5;
+}
+
+.ui-btn--danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.ui-btn--sm {
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
+}
+
+.ui-btn--icon {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+}
+
+.ui-btn--icon.ui-btn--sm {
+  width: 22px;
+  height: 22px;
+}
+
+.ui-btn--round {
+  border-radius: var(--radius-pill);
+}
+
+/* A single loud play button in the transport. */
+.ui-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  cursor: pointer;
+  transition: background var(--fast), color var(--fast), border-color var(--fast);
+}
+
+.ui-play:hover {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+
+.ui-play:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* -------------------------------------------------------------- tooltips -- */
+
+.ui-tip {
+  z-index: 300;
+  padding: 4px 7px;
+  background: #0b0b0b;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  font-size: 11px;
+  line-height: 1.4;
+  box-shadow: var(--shadow-2);
+  user-select: none;
+  animation: ui-fade 100ms var(--ease);
+}
+
+/* ---------------------------------------------------------------- inputs -- */
+
+.ui-input,
+.ui-select__trigger,
+.ui-textarea {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 0 7px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  font-size: 11.5px;
+  transition: border-color var(--fast), box-shadow var(--fast), background var(--fast);
+}
+
+.ui-textarea {
+  height: auto;
+  padding: 6px 7px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.ui-input::placeholder,
+.ui-textarea::placeholder {
+  color: var(--text-2);
+}
+
+.ui-input:hover,
+.ui-textarea:hover,
+.ui-select__trigger:hover {
+  border-color: #34343f;
+}
+
+.ui-input:focus,
+.ui-textarea:focus,
+.ui-select__trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.ui-input[type='color'] {
+  width: 34px;
+  padding: 1px;
+  cursor: pointer;
+}
+
+/* A field: label above, control below — the inspector's unit of layout. */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 0;
+}
+
+.ui-field--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ui-field__label {
+  color: var(--text-1);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* Font picker: the dropdown grows to fill, the import button hugs its right. */
+.font-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.font-row .ui-select__trigger {
+  flex: 1;
+}
+
+.ui-field__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui-field__value {
+  min-width: 42px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-align: right;
+}
+
+.ui-hint {
+  margin: 3px 0 0;
+  color: var(--text-2);
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+/* ---------------------------------------------------------------- slider -- */
+
+.ui-slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 16px;
+  touch-action: none;
+  user-select: none;
+}
+
+.ui-slider__track {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  background: var(--bg-4);
+  border-radius: 2px;
+}
+
+.ui-slider__range {
+  position: absolute;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.ui-slider__thumb {
+  display: block;
+  width: 11px;
+  height: 11px;
+  background: #e6e6e6;
+  border: none;
+  border-radius: 2px;
+  cursor: grab;
+  transition: background var(--fast);
+}
+
+.ui-slider__thumb:hover {
+  background: var(--accent);
+}
+
+.ui-slider__thumb:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* ---------------------------------------------------------------- switch -- */
+
+.ui-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  padding: 0;
+  background: var(--bg-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--fast), border-color var(--fast);
+}
+
+.ui-switch[data-state='checked'] {
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.ui-switch:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.ui-switch__thumb {
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+  transform: translateX(2px);
+  transition: transform var(--fast);
+}
+
+.ui-switch[data-state='checked'] .ui-switch__thumb {
+  transform: translateX(14px);
+}
+
+/* ------------------------------------------------------------ select menu -- */
+
+.ui-select__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ui-select__content {
+  z-index: 300;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 320px;
+  min-width: 132px;
+  padding: 3px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-3);
+  animation: ui-fade 100ms var(--ease);
+}
+
+.ui-select__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: var(--radius-s);
+  color: var(--text-1);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.ui-select__item[data-highlighted] {
+  background: var(--bg-4);
+  color: var(--text-0);
+}
+
+.ui-select__item[data-state='checked'] {
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------- badges -- */
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 5px;
+  background: var(--bg-4);
+  border-radius: var(--radius-s);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 15px;
+}
+
+.ui-badge--accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ui-kbd {
+  padding: 1px 5px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text-1);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+/* ------------------------------------------------------------- segmented -- */
+
+.ui-seg {
+  display: inline-flex;
+  gap: 1px;
+  padding: 1px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.ui-seg--wide {
+  display: flex;
+  width: 100%;
+}
+
+.ui-seg__item {
+  flex: 1;
+  height: 22px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: var(--text-1);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--fast), color var(--fast);
+}
+
+.ui-seg__item:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+.ui-seg__item[data-on='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ tabs -- */
+
+.ui-tabs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ui-tabs__list {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 6px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+}
+
+.ui-tabs__trigger {
+  position: relative;
+  height: 28px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: color var(--fast);
+}
+
+.ui-tabs__trigger:hover {
+  color: var(--text-0);
+}
+
+.ui-tabs__trigger[data-state='active'] {
+  color: var(--text-0);
+}
+
+.ui-tabs__trigger[data-state='active']::after {
+  position: absolute;
+  right: 6px;
+  bottom: 0;
+  left: 6px;
+  height: 2px;
+  background: var(--accent);
+  content: '';
+}
+
+.ui-tabs__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.ui-tabs__panel {
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---------------------------------------------------------------- dialog -- */
+
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(0, 0, 0, 0.7);
+  animation: ui-fade 110ms var(--ease);
+}
+
+.ui-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 260;
+  width: min(440px, calc(100vw - 40px));
+  padding: 14px 16px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-3);
+  transform: translate(-50%, -50%);
+  animation: ui-pop 120ms var(--ease);
+}
+
+.ui-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ui-dialog__title {
+  margin: 0;
+  color: var(--text-0);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.ui-dialog__note {
+  margin: 10px 0 0;
+  color: var(--text-2);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+@keyframes ui-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* --------------------------------------------------------------- section -- */
+
+.ui-section {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.ui-section__head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-1);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--fast), background var(--fast);
+}
+
+.ui-section__head:hover {
+  background: var(--bg-2);
+  color: var(--text-0);
+}
+
+.ui-section__chevron {
+  color: var(--text-2);
+  transition: transform var(--fast);
+}
+
+.ui-section[data-open='true'] .ui-section__chevron {
+  transform: rotate(90deg);
+}
+
+.ui-section__body {
+  padding: 0 10px 9px;
+}
+
+/* ----------------------------------------------------------------- tiles -- */
+
+.ui-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-s);
+  transition: border-color var(--fast), background var(--fast);
+}
+
+.ui-tile:hover {
+  background: var(--bg-3);
+  border-color: var(--line);
+}
+
+.ui-tile--on {
+  border-color: var(--accent);
+}
+
+.ui-tile__open {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-tile__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--bg-0);
+  border-radius: var(--radius-s);
+}
+
+.ui-tile__thumb img,
+.ui-tile__thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ui-tile__name {
+  overflow: hidden;
+  padding-right: 22px;
+  color: var(--text-1);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-tile__action {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  transition: filter var(--fast);
+}
+
+.ui-tile__action:hover {
+  filter: brightness(1.15);
+}
+
+.ui-tile__action--add {
+  background: var(--ok);
+  color: #04240e;
+}
+
+.ui-tile__action--remove {
+  background: var(--danger);
+  color: #2a0603;
+}
+
+.ui-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 6px;
+  padding: 2px 10px 12px;
+}
+
+/* ----------------------------------------------------------------- misc -- */
+
+.ui-empty {
+  padding: 18px 14px;
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui-spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ui-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+/* A drop target, used by the import dialog and the screen picker. */
+.ui-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 14px 12px;
+  background: var(--bg-1);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-m);
+  color: var(--text-1);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--fast), background var(--fast), color var(--fast);
+}
+
+.ui-drop:hover,
+.ui-drop--over {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--text-0);
+}
+
+.ui-drop > svg {
+  color: var(--text-2);
+}
+
+/* The import dialog can afford a taller target than the inspector. */
+.ui-drop--hero {
+  padding: 26px 16px;
+  gap: 7px;
+}
+
+.ui-drop__note {
+  color: var(--text-2);
+  font-size: 10.5px;
+}
+
+.ui-tile__meta {
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+}
+
+/* The rail's count badge sits under the label. */
+.rail__item .ui-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0 4px;
+  font-size: 9px;
+}
+
+/* ---------------------------------------------------- screen picker (对象) -- */
+
+.screen-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.screen-picker__now {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-s);
+  color: var(--text-1);
+  font-size: 11px;
+}
+
+.screen-picker__dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-2);
+  border-radius: var(--radius-pill);
+}
+
+.screen-picker__dot[data-on='true'] {
+  background: var(--accent);
+}
+
+.screen-picker__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 2px 7px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-1);
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: color var(--fast), border-color var(--fast), background var(--fast);
+}
+
+.screen-picker__clear:hover {
+  background: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* The transport's zoom slider needs a width: it lives in a content-sized label. */
+.timeline__zoom .ui-slider {
+  flex: none;
+  width: 104px;
+}
+
+/* ------------------------------------------------------------ code panel -- */
+
+.code {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.code__editor {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 200px;
+  margin: 10px 10px 8px;
+  overflow: hidden;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+/* Line numbers scroll with the text, so they live in their own column. */
+.code__gutter {
+  flex: 0 0 auto;
+  padding: 9px 0;
+  overflow: hidden;
+  background: var(--bg-1);
+  border-right: 1px solid var(--line-soft);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.65;
+  text-align: right;
+  user-select: none;
+}
+
+.code__ln {
+  padding: 0 9px 0 10px;
+}
+
+.code__ln--bad {
+  background: var(--danger-soft);
+  color: #ff9a92;
+}
+
+/* The coloured copy sits under the transparent textarea: same font, same box,
+   same scroll — so the two never drift. */
+.code__surface {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.code__highlight,
+.code__input {
+  margin: 0;
+  padding: 9px 10px;
+  border: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.65;
+  tab-size: 2;
+  white-space: pre;
+  word-wrap: normal;
+  overflow: auto;
+}
+
+.code__highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--text-1);
+}
+
+.code__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
+  resize: none;
+  outline: none;
+}
+
+.code__input::selection {
+  background: var(--accent-soft);
+}
+
+.code__row--bad {
+  background: var(--danger-soft);
+}
+
+.code__row {
+  min-height: 1.65em;
+}
+
+/* Token colours: structure in the greys, meaning in three hues. */
+.tok--comment { color: var(--text-2); font-style: italic; }
+.tok--key { color: #8ab4f8; }
+.tok--at { color: var(--accent); }
+.tok--suffix { color: var(--accent-2); }
+.tok--kind { color: #7dd3a0; }
+.tok--ref { color: var(--text-0); }
+.tok--field { color: #9aa6c4; }
+.tok--number { color: #e0b271; }
+.tok--vector { color: #c792ea; }
+.tok--string { color: #d6bcfa; }
+.tok--flag { color: var(--accent-2); }
+.tok--plain { color: var(--text-1); }
+
+.code__problem {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  max-width: calc(100% - 16px);
+  padding: 4px 8px;
+  background: rgba(255, 69, 58, 0.16);
+  border: 1px solid rgba(255, 69, 58, 0.45);
+  border-radius: var(--radius-s);
+  color: #ffb3ac;
+  font-family: var(--mono);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.code__help {
+  margin: 0 10px 12px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 8px;
+}
+
+.code__help summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-1);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.code__help pre {
+  margin: 8px 0 0;
+  padding: 9px 10px;
+  overflow: auto;
+  background: var(--bg-0);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-s);
+  color: var(--text-1);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.7;
+  white-space: pre;
+}
+
+/* ----------------------------------------------------------------- export -- */
+
+.export {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.export__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--fast), background var(--fast);
+}
+
+.export__option:hover {
+  background: var(--bg-3);
+  border-color: var(--accent-line);
+}
+
+.export__option > svg {
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.export__option b {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.export__option em {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-2);
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.export__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-1);
+  font-size: 11.5px;
+}
+
+.export__pct {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.export__bar {
+  height: 4px;
+  overflow: hidden;
+  background: var(--bg-4);
+  border-radius: 2px;
+}
+
+.export__bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.export__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* A path field for the local-first import: type where the project is. */
+.export__path {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.export__path-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.export__path-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ------------------------------------------------------- language menu -- */
+
+.langmenu__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  width: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+.langmenu__trigger:hover {
+  background: var(--bg-3);
+}
+
+.langmenu__flag {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.langmenu {
+  min-width: 132px;
+  padding: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-2, 0 8px 24px rgba(0, 0, 0, 0.45));
+  z-index: 1000;
+}
+
+.langmenu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-0);
+  cursor: pointer;
+  outline: none;
+}
+
+.langmenu__item[data-highlighted] {
+  background: var(--bg-4);
+}
+
+.langmenu__label {
+  flex: 1;
+}
+
+.langmenu__check {
+  color: var(--accent);
+  font-size: 12px;
+}

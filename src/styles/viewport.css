@@ -1,0 +1,178 @@
+
+
+/* Off-screen camera indicator: a chip that rides the viewport edge and points
+   at the shot camera. Positioned imperatively from the render loop. */
+.viewport__camera-hint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text-0);
+  font-size: 10.5px;
+  font-family: var(--mono);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s, border-color 0.18s;
+  z-index: 3;
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
+.viewport__camera-hint:hover {
+  border-color: var(--accent);
+  background: rgba(16, 22, 34, 0.94);
+}
+
+/* ==========================================================================
+   Speed ramp editor (inspector → 变速)
+   ========================================================================== */
+
+.speed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.speed__chart {
+  padding: 0 10px;
+}
+
+.speed__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+
+.speed__plot {
+  fill: var(--bg-0);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.speed__grid {
+  stroke: var(--line-soft);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.speed__grid--unit {
+  stroke: #33405a;
+}
+
+.speed__tick {
+  fill: var(--text-2);
+  font-size: 8px;
+  font-family: var(--mono);
+  pointer-events: none;
+}
+
+.speed__tick--y {
+  text-anchor: end;
+}
+
+.speed__tick--mid {
+  text-anchor: middle;
+}
+
+.speed__tick--end {
+  text-anchor: end;
+}
+
+.speed__area {
+  fill: rgba(99, 102, 241, 0.16);
+  pointer-events: none;
+}
+
+.speed__curve {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.speed__playhead line {
+  stroke: #ff4d6a;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+.speed__playhead circle {
+  fill: #ff4d6a;
+  pointer-events: none;
+}
+
+.speed__handle-line {
+  stroke: var(--text-2);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.speed__handle {
+  fill: var(--bg-2);
+  stroke: var(--accent-2);
+  stroke-width: 1.5;
+  cursor: grab;
+}
+
+.speed__handle:hover {
+  fill: var(--accent-2);
+}
+
+.speed__node {
+  fill: var(--bg-1);
+  stroke: var(--accent);
+  stroke-width: 2;
+  cursor: grab;
+}
+
+.speed__node:hover {
+  fill: var(--accent-soft);
+}
+
+.speed__node--active {
+  fill: var(--accent);
+  stroke: #fff;
+}
+
+.input--center {
+  text-align: center;
+}
+
+.speed .field__control {
+  min-width: 0;
+}
+
+/* Looking through the camera the chip stops chasing the marker (there is nothing
+   to point at — you are standing inside it) and parks under the toolbar, where it
+   is the way back to the free view. */
+/* The chip is positioned by the render loop through *inline* styles, so the
+   parked state has to outrank them — otherwise it keeps the last marker position
+   and, worse, an inline `opacity: 0` from a moment when the marker was on screen. */
+.viewport__camera-hint[data-mode='scene'] {
+  top: 46px !important;
+  left: 12px !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+/* The arrow rides the chip's leading edge and is rotated from the render loop,
+   so it needs its own box (a bare <svg> would be rotated by the label maths). */
+.viewport__camera-hint-arrow {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}

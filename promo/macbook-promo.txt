@@ -1,0 +1,112 @@
+# 简辑 · 工程文件 v1
+#
+# MacBook Pro 宣发片 · 重制版 —— 快节奏、大运动、错峰标题。
+# 摄像机固定不动；冲击力来自三处：机身的冲镜 / 旋转 / 缩放、逐拍切换的背景、
+# 以及拆成多块、各自带着缩放与过冲登场的标题。
+
+project = MacBook Pro 宣发片
+aspect = 16:9
+fps = 30
+
+# 素材库
+壁纸 = media:"macOS 壁纸.png" 1600x1000
+代码 = media:代码编辑器.png 1600x1000
+界面 = media:编辑器界面.png 1600x1000
+片尾 = media:片尾.png 1600x1000
+开场 = media:开场动画.mp4 6.00s 1600x1000
+底图开场 = media:底图-开场.png 1920x1080
+底图彩色 = media:底图-彩色.png 1920x1080
+底图极速 = media:底图-极速.png 1920x1080
+底图片尾 = media:底图-片尾.png 1920x1080
+背景动画 = media:背景动画.mp4 8.00s 1280x720
+
+# ================================================================== 主角 ---
+
+macbook = model:macbook-pro-13-2020 "MacBook Pro 13\"" color=#f5a524
+
+# 0.00s 黑场里的一个小影子，从深处冲进来
+@macbook t=0.00 p=[0.30,-0.30,-4.00] s=0 a=[0,-95,0] sc=[0.28,0.28,0.28] f=- v=1 scene=bg=media,bgmedia=底图开场,env=0.15,exp=0.3
+
+# 0.55s 冲锋：猛加速、后半段收住
+@macbook t=0.55 p=[0,0,-1.20] s=0 a=[0,-60,0] sc=[0.50,0.50,0.50] f=- v=[0:0.1,0.35:2.8,0.65:0.9,1:0.85] scene=bg=media,bgmedia=底图开场,env=0.9,exp=1
+
+# 1.70s 落位，灯全亮
+@macbook t=1.70 p=[0,0,0] s=0 a=[0,-8,0] sc=[0.90,0.90,0.90] f=- v=1 scene=bg=media,bgmedia=底图开场,env=1.35,exp=1.15
+
+# 2.30s 掀盖，背景同时切成彩色光斑
+@macbook t=2.30 p=[0,0,0] s=70 a=[0.02,-6,0] f=壁纸 v=[0:0.3,0.5:1.9,1:0.7] scene=bg=media,bgmedia=底图彩色,env=1.4,exp=1.25
+
+# 2.85s 开到底，稳
+@macbook t=2.85 p=[0,0,0] s=112 a=[0.02,4,0] sc=[0.95,0.95,0.95] f=壁纸 v=1 scene=bg=media,bgmedia=底图彩色,env=1.25,exp=1.15
+
+# 5.60s 微微仰一点，喘口气
+@macbook t=5.60 p=[0,0,0.04] s=112 a=[0.03,6,0] f=壁纸 v=1
+
+# 6.10s 屏幕切成代码，背景转冷
+@macbook t=6.10 p=[0,0,0.04] s=112 a=[0.03,6,0] f=代码 v=[0:0.5,0.5:1.6,1:0.8] scene=bg=media,bgmedia=底图极速,env=1.1,exp=1.2
+
+# 8.60s 360° 甩身，同时拉远，背景换成动态光
+@macbook t=8.60 p=[0,0,-0.60] s=112 a=[0,-360,0] sc=[0.72,0.72,0.72] f=代码 v=[0:0.15,0.4:2.4,0.75:0.85,1:0.6] scene=bg=media,bgmedia=背景动画,env=1.5,exp=1.35
+
+# 10.60s 转回正面落地，屏幕切进动态片段
+@macbook t=10.60 p=[0,0,0] s=112 a=[0,0,0] sc=[1,1,1] f=开场 v=[0:0.4,0.5:1.5,1:0.7] scene=bg=media,bgmedia=背景动画,env=1.45,exp=1.3
+
+# 12.40s 猛推近，屏幕是编辑器本体
+@macbook t=12.40 p=[0,0,0.12] s=112 a=[0.05,22,0] sc=[1.18,1.18,1.18] f=界面 v=[0:0.2,0.5:2.2,1:0.75] scene=bg=media,bgmedia=底图极速,env=1.15,exp=1.1
+
+# 15.60s 拉回，屏幕变片尾卡，灯光转暖收拢
+@macbook t=15.60 p=[0,0,0] s=112 a=[0.02,-3,0] sc=[0.90,0.90,0.90] f=片尾 v=[0:0.3,0.5:1.8,1:0.7] scene=bg=media,bgmedia=底图片尾,env=0.95,exp=1
+
+# 19.00s 定格收尾
+@macbook t=19.00 p=[0,0,0] s=112 a=[0.02,-3,0] sc=[0.90,0.90,0.90] f=片尾 v=1
+
+# 动态片段的附加轨道：先正常 1s，再慢放一小段（裁剪 + 变速）
+@macbook.clip a m=开场 t=10.60 in=0.00 out=1.00 v=1
+@macbook.clip b m=开场 t=11.60 in=2.60 out=3.40 v=[0:0.5,0.5:2,1:0.5]
+
+# ================================================================== 标题 ---
+#
+# 主标题拆成两块，错峰登场：一块从左冲入、一块从上方砸下，都带缩放过冲。
+
+mk = text "MacBook" color=#f4f4f6 appear=3.10
+  text font=dejavu-bold size=0.40 color=#f4f4f6 opacity=1 align=center spacing=0 lineheight=1.1 wrap=0 content="MacBook"
+@mk t=3.10 p=[-4.00,1.10,0.80] s=- a=[0,18,0] sc=[0.60,0.60,0.60] f=- v=[0:0.1,0.6:2.6,1:0.7]
+@mk t=3.70 p=[-0.72,1.10,0.80] s=- a=[0,0,0] sc=[1.15,1.15,1.15] f=- v=1
+@mk t=4.10 p=[-0.72,1.10,0.80] s=- a=[0,0,0] sc=[1,1,1] f=- v=1
+@mk t=8.00 p=[-4.00,1.10,0.80] s=- a=[0,18,0] f=- v=0.8
+
+pro = text "Pro" color=#00c2d1 appear=3.30
+  text font=dejavu-bold size=0.40 color=#00c2d1 opacity=1 align=center spacing=0 lineheight=1.1 wrap=0 content="Pro"
+@pro t=3.30 p=[0.66,2.60,0.80] s=- a=[0,-24,0] sc=[0.50,0.50,0.50] f=- v=[0:0.15,0.55:2.4,1:0.7]
+@pro t=3.90 p=[0.66,1.10,0.80] s=- a=[0,0,0] sc=[1.15,1.15,1.15] f=- v=1
+@pro t=4.30 p=[0.66,1.10,0.80] s=- a=[0,0,0] sc=[1,1,1] f=- v=1
+@pro t=8.00 p=[0.66,2.60,0.80] s=- a=[0,-24,0] f=- v=0.9
+
+# 副标从一点放大弹出，收尾时缩回
+tag = text "轻 · 薄 · 强" color=#e6e6e6 appear=4.40
+  text font=wenkai size=0.18 color=#e6e6e6 opacity=1 align=center spacing=0.02 lineheight=1.2 wrap=0 content="轻 · 薄 · 强"
+@tag t=4.40 p=[0,-0.30,1.00] s=- a=[0,0,0] sc=[0.15,0.15,0.15] f=- v=[0:0.2,0.6:2.4,1:0.6]
+@tag t=4.90 p=[0,-0.30,1.00] s=- a=[0,0,0] sc=[1,1,1] f=- v=1
+@tag t=8.00 p=[0,-0.30,1.00] s=- a=[0,0,0] sc=[0.15,0.15,0.15] f=- v=0.6
+
+# 特写时的参数行，从下放大进场
+spec = text "13 英寸 · 全天候续航 · 安静地工作" color=#9aa3b2 appear=12.60
+  text font=wenkai size=0.12 color=#9aa3b2 opacity=1 align=center spacing=0.01 lineheight=1.3 wrap=0 content="13 英寸 · 全天候续航 · 安静地工作"
+@spec t=12.60 p=[0,-0.32,1.00] s=- a=[0,0,0] sc=[0.30,0.30,0.30] f=- v=[0:0.2,0.6:2.2,1:0.6]
+@spec t=13.20 p=[0,-0.32,1.00] s=- a=[0,0,0] sc=[1,1,1] f=- v=1
+@spec t=15.40 p=[0,-0.32,1.00] s=- a=[0,0,0] sc=[0.30,0.30,0.30] f=- v=0.6
+
+# ================================================================== 片尾 ---
+#
+# 大标题带着一点旋转砸下，副标随后放大进场。
+
+end1 = text "简辑" color=#f4f4f6 appear=16.00
+  text font=wenkai size=0.62 color=#f4f4f6 opacity=1 align=center spacing=0.04 lineheight=1.1 wrap=0 content="简辑"
+@end1 t=16.00 p=[0,1.62,1.00] s=- a=[0,14,0] sc=[0.30,0.30,0.30] f=- v=[0:0.15,0.55:2.4,1:0.7]
+@end1 t=16.50 p=[0,1.28,1.00] s=- a=[0,0,0] sc=[1,1,1] f=- v=1
+@end1 t=16.80 p=[0,1.28,1.00] s=- a=[0,0,0] sc=[1,1,1] f=- v=1
+
+end2 = text "让 3D 剪辑变简单" color=#00c2d1 appear=16.60
+  text font=wenkai size=0.16 color=#00c2d1 opacity=1 align=center spacing=0.02 lineheight=1.2 wrap=0 content="让 3D 剪辑变简单"
+@end2 t=16.60 p=[0,-0.34,1.00] s=- a=[0,0,0] sc=[0.20,0.20,0.20] f=- v=[0:0.2,0.6:2.4,1:0.6]
+@end2 t=17.10 p=[0,-0.34,1.00] s=- a=[0,0,0] sc=[1,1,1] f=- v=1

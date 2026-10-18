@@ -1,0 +1,10 @@
+# 简辑 · 工程文件 v1
+
+# 项目
+project = 未命名项目
+aspect = 16:9
+fps = 30
+
+# 3D 模型
+macbook_pro_13 = model:macbook-pro-13-2020 "MacBook Pro 13\"" color=#f5a524
+@macbook_pro_13 t=0 p=[0,0,0] s=0 a=[0,0,0] f=- v=1 scene=bg=gradient,color=#0b0f16,grad=#1d2534>#05070b,angle=160,env=1,exp=1,shadow=0.55:2.6
