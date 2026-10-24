@@ -249,7 +249,30 @@ export async function runAgent(
     })
     if (!response.ok) {
       const body = await response.text().catch(() => '')
-      return { text: '', error: `AI 服务不可用（HTTP ${response.status}）${body ? `：${body}` : ''}` }
+      const hint =
+        response.status === 401
+          ? 'API Key 无效或已过期'
+          : response.status === 402
+            ? '额度用尽或需要充值'
+            : response.status === 429
+              ? '请求过于频繁（限流）或额度用尽'
+              : response.status === 404
+                ? '模型不存在（检查模型名）'
+                : ''
+      const detail = (() => {
+        try {
+          const parsed = JSON.parse(body) as { error?: { message?: string } | string }
+          return typeof parsed.error === 'string'
+            ? parsed.error
+            : parsed.error?.message ?? body
+        } catch {
+          return body
+        }
+      })()
+      return {
+        text: '',
+        error: `AI 服务不可用（HTTP ${response.status}${hint ? ` · ${hint}` : ''}）：${detail}`,
+      }
     }
     const data = (await response.json()) as {
       choices?: Array<{ message: { role: string; content?: string; tool_calls?: ChatMessage['tool_calls'] } }>

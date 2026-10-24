@@ -404,30 +404,45 @@ function workspace(): Plugin {
               )
               return
             }
-            const upstream = await fetch(`${baseUrl}/chat/completions`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`,
-                // OpenRouter / OrcaRouter 归属约定：让上游识别这是本 OSS 应用带来的流量。
-                // 头值必须为 ASCII（ByteString），中文标题不能直接写。
-                'HTTP-Referer': 'https://github.com/UAE2/uae2-studio',
-                'X-Title': 'UAE2 Studio',
-              },
-              body: JSON.stringify({
-                model,
-                messages: body.messages,
-                tools: body.tools,
-                tool_choice: 'auto',
-              }),
-            })
+            const controller = new AbortController()
+            const timer = setTimeout(() => controller.abort(), 60_000)
+            let upstream: Response
+            try {
+              upstream = await fetch(`${baseUrl}/chat/completions`, {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${apiKey}`,
+                  // OpenRouter / OrcaRouter 归属约定：让上游识别这是本 OSS 应用带来的流量。
+                  // 头值必须为 ASCII（ByteString），中文标题不能直接写。
+                  'HTTP-Referer': 'https://github.com/UAE2/uae2-studio',
+                  'X-Title': 'UAE2 Studio',
+                },
+                body: JSON.stringify({
+                  model,
+                  messages: body.messages,
+                  tools: body.tools,
+                  tool_choice: 'auto',
+                }),
+              })
+            } finally {
+              clearTimeout(timer)
+            }
             res.setHeader('Content-Type', 'application/json; charset=utf-8')
             res.statusCode = upstream.status
             const text = await upstream.text()
             res.end(text)
           } catch (error) {
             res.statusCode = 502
-            res.end(JSON.stringify({ error: `AI 上游不可用：${error instanceof Error ? error.message : String(error)}` }))
+            const cause = error instanceof Error && error.name === 'AbortError'
+              ? '请求超时（60 秒无响应）'
+              : '网络连接失败，无法访问上游'
+            res.end(
+              JSON.stringify({
+                error: `${cause}。这是网络层错误，不是额度用尽——额度/鉴权问题会以 HTTP 402/401/429 返回。若持续出现，请检查网络、代理或上游服务状态。`,
+              }),
+            )
           }
         })()
       })
