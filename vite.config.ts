@@ -4,6 +4,16 @@ import { createReadStream, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { homedir } from 'node:os'
 import type { ServerResponse } from 'node:http'
+import aiProviders from './ai-providers.json'
+
+type AIProviderId = keyof typeof aiProviders.providers
+interface AIProviderSource {
+  name: string
+  base_url: string
+  env_keys: string[]
+  vision: boolean
+  default_model: string
+}
 
 /**
  * 本地工程与素材的读盘接口.
@@ -373,26 +383,23 @@ function workspace(): Plugin {
               messages?: unknown
               tools?: unknown
             }
-            // 客户端图形化配置优先；没给时退回环境变量（OrcaRouter 默认）。
-            const provider = body.provider === 'deepseek' ? 'deepseek' : 'orcarouter'
-            const envKey = provider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : process.env.ORCAROUTER_API_KEY
+            // 客户端图形化配置优先；没给时从 ai-providers.json 派生
+            // （name / base_url / env_keys / default_model），不硬编码供应商。
+            const providerIds = Object.keys(aiProviders.providers) as AIProviderId[]
+            const provider = providerIds.includes(body.provider as AIProviderId)
+              ? (body.provider as AIProviderId)
+              : (aiProviders.default_provider as AIProviderId)
+            const source = aiProviders.providers[provider] as AIProviderSource
+            const envKey = source.env_keys.map((key) => process.env[key]).find((value) => !!value) ?? ''
             const apiKey = body.apiKey?.trim() || envKey || ''
-            const baseUrl = (
-              body.baseUrl?.trim() ||
-              (provider === 'deepseek' ? 'https://api.deepseek.com' : 'https://api.orcarouter.ai/v1')
-            ).replace(/\/+$/, '')
-            const model =
-              body.model?.trim() ||
-              (provider === 'deepseek' ? 'deepseek-chat' : 'orcarouter/auto')
+            const baseUrl = (body.baseUrl?.trim() || source.base_url).replace(/\/+$/, '')
+            const model = body.model?.trim() || source.default_model
 
             if (!apiKey) {
               res.statusCode = 502
               res.end(
                 JSON.stringify({
-                  error:
-                    provider === 'deepseek'
-                      ? '未配置 DeepSeek API Key（在 platform.deepseek.com 获取）'
-                      : '未配置 OrcaRouter API Key（在 https://www.orcarouter.ai 获取）',
+                  error: `未配置 ${source.name} API Key（设置环境变量 ${source.env_keys.join(' 或 ')}，或在设置面板里填入）`,
                 }),
               )
               return

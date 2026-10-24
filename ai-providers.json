@@ -1,0 +1,19 @@
+{
+  "default_provider": "orcarouter",
+  "providers": {
+    "orcarouter": {
+      "name": "OrcaRouter",
+      "base_url": "https://api.orcarouter.ai/v1",
+      "env_keys": ["ORCA_KEY", "ORCAROUTER_API_KEY"],
+      "vision": true,
+      "default_model": "orcarouter/auto"
+    },
+    "deepseek": {
+      "name": "DeepSeek",
+      "base_url": "https://api.deepseek.com",
+      "env_keys": ["DEEPSEEK_API_KEY"],
+      "vision": false,
+      "default_model": "deepseek-chat"
+    }
+  }
+}
