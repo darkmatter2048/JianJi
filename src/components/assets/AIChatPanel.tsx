@@ -252,7 +252,7 @@ export function AIChatPanel() {
           </div>
           <p className="ai-chat__config-note">
             {config.provider === 'orcarouter' ? (
-              <a href="https://www.orcarouter.ai" target="_blank" rel="noreferrer">
+              <a href="https://www.orcarouter.ai/ref/ref_7a64f320a02958107d0b" target="_blank" rel="noreferrer">
                 {t('访问OrcaRouter')}
               </a>
             ) : (
