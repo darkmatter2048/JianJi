@@ -354,6 +354,78 @@ function workspace(): Plugin {
       })
       return
     }
+    if (url.pathname === '/__ai/chat') {
+      if (req.method !== 'POST') {
+        res.statusCode = 405
+        res.end('POST only')
+        return
+      }
+      const chunks: Buffer[] = []
+      req.on('data', (chunk: Buffer) => chunks.push(chunk))
+      req.on('end', () => {
+        void (async () => {
+          try {
+            const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+              provider?: string
+              baseUrl?: string
+              apiKey?: string
+              model?: string
+              messages?: unknown
+              tools?: unknown
+            }
+            // 客户端图形化配置优先；没给时退回环境变量（OrcaRouter 默认）。
+            const provider = body.provider === 'deepseek' ? 'deepseek' : 'orcarouter'
+            const envKey = provider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : process.env.ORCAROUTER_API_KEY
+            const apiKey = body.apiKey?.trim() || envKey || ''
+            const baseUrl = (
+              body.baseUrl?.trim() ||
+              (provider === 'deepseek' ? 'https://api.deepseek.com' : 'https://api.orcarouter.ai/v1')
+            ).replace(/\/+$/, '')
+            const model =
+              body.model?.trim() ||
+              (provider === 'deepseek' ? 'deepseek-chat' : 'orcarouter/auto')
+
+            if (!apiKey) {
+              res.statusCode = 502
+              res.end(
+                JSON.stringify({
+                  error:
+                    provider === 'deepseek'
+                      ? '未配置 DeepSeek API Key（在 platform.deepseek.com 获取）'
+                      : '未配置 OrcaRouter API Key（在 https://www.orcarouter.ai 获取）',
+                }),
+              )
+              return
+            }
+            const upstream = await fetch(`${baseUrl}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+                // OpenRouter / OrcaRouter 归属约定：让上游识别这是本 OSS 应用带来的流量。
+                // 头值必须为 ASCII（ByteString），中文标题不能直接写。
+                'HTTP-Referer': 'https://github.com/UAE2/uae2-studio',
+                'X-Title': 'UAE2 Studio',
+              },
+              body: JSON.stringify({
+                model,
+                messages: body.messages,
+                tools: body.tools,
+                tool_choice: 'auto',
+              }),
+            })
+            res.setHeader('Content-Type', 'application/json; charset=utf-8')
+            res.statusCode = upstream.status
+            const text = await upstream.text()
+            res.end(text)
+          } catch (error) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ error: `AI 上游不可用：${error instanceof Error ? error.message : String(error)}` }))
+          }
+        })()
+      })
+      return
+    }
     next()
   }
 

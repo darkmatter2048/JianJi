@@ -652,7 +652,7 @@ function parseTextFields(
   if (map.has('color')) next.color = map.get('color')
   if (map.has('opacity')) next.opacity = num(map, 'opacity', 1)
   if (map.has('align')) next.align = map.get('align') as TextSettings['align']
-  if (map.has('spacing')) next.letterSpacing = num(map, 'spacing', 0)
+  if (map.has('spacing')) next.letterSpacing = Math.min(1, Math.max(0, num(map, 'spacing', 0)))
   if (map.has('lineheight')) next.lineHeight = num(map, 'lineheight', 1.25)
   if (map.has('wrap')) next.maxWidth = num(map, 'wrap', 0)
   if (content) next.content = content[1].replace(/\\"/g, '"')

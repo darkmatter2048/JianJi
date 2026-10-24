@@ -1,4 +1,4 @@
-import { Code2, Images, Laptop, Type } from 'lucide-react'
+import { Code2, Images, Laptop, Sparkles, Type } from 'lucide-react'
 import { useT } from '../../lib/i18n'
 import { useEditorStore } from '../../store/editorStore'
 import type { LeftNav } from '../../types'
@@ -6,6 +6,7 @@ import { Badge, Tip } from '../ui/kit'
 import { CodeSection } from './CodeSection'
 import { DevicesSection } from './DevicesSection'
 import { ResourcesSection } from './ResourcesSection'
+import { AIChatPanel } from './AIChatPanel'
 import { TextSection } from './TextSection'
 
 const NAV: Array<{ id: LeftNav; label: string; hint: string; icon: typeof Images }> = [
@@ -13,6 +14,7 @@ const NAV: Array<{ id: LeftNav; label: string; hint: string; icon: typeof Images
   { id: 'devices', label: '设备', hint: '设备库与场景中的设备', icon: Laptop },
   { id: 'text', label: '文字', hint: '3D 文字对象', icon: Type },
   { id: 'code', label: '代码', hint: '工程即文本：查看 / 编辑 / 应用', icon: Code2 },
+  { id: 'ai', label: 'AI', hint: 'AI 对话：构思分镜，生成动画', icon: Sparkles },
 ]
 
 /**
@@ -43,6 +45,7 @@ export function AssetPanel() {
     text: textCount,
     // 代码 is a view of the whole project, so it has nothing to count.
     code: 0,
+    ai: 0,
   }
 
   return (
@@ -74,6 +77,7 @@ export function AssetPanel() {
         {leftNav === 'devices' ? <DevicesSection /> : null}
         {leftNav === 'text' ? <TextSection /> : null}
         {leftNav === 'code' ? <CodeSection /> : null}
+        {leftNav === 'ai' ? <AIChatPanel /> : null}
       </div>
     </div>
   )

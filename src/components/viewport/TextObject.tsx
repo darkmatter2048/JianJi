@@ -4,10 +4,36 @@ import * as THREE from 'three'
 import { findFont, useFontCatalog } from '../../lib/fonts'
 import { objectVisibilityAt } from '../../lib/keyframes'
 import { useEditorStore } from '../../store/editorStore'
-import type { SceneObject } from '../../types'
+import type { ProjectAspect, SceneObject } from '../../types'
 import { isRotationGizmoPart } from './RotationGizmo'
 import { useObjectDrag } from './useObjectDrag'
 import { useObjectTransform } from './useObjectTransform'
+
+/** 各画幅在拍摄距离处的可见宽度（单位，约等于 shot 相机的横向取景）。 */
+const FRAME_WIDTH: Record<ProjectAspect, number> = {
+  '16:9': 5.15,
+  '9:16': 1.63,
+  '1:1': 2.89,
+  '4:5': 2.31,
+  '21:9': 6.75,
+}
+
+/** 粗略估算一行文字渲染后的世界宽度：CJK 全角、拉丁/数字约 0.55 宽。 */
+function estimateTextWidth(content: string, fontSize: number, letterSpacing: number): number {
+  const lines = content.split('\n')
+  let widest = 0
+  for (const line of lines) {
+    let width = 0
+    for (const ch of line) {
+      if (ch === ' ') width += fontSize * 0.3
+      else if (/[\u3000-\u9fff\uff00-\uffef]/.test(ch)) width += fontSize * 1.0
+      else width += fontSize * 0.55
+    }
+    width += letterSpacing * Math.max(0, line.length - 1)
+    widest = Math.max(widest, width)
+  }
+  return widest
+}
 
 /**
  * Renders one `kind: 'text'` object with troika (through drei's `<Text>`).
@@ -46,29 +72,37 @@ export function TextObject({ object }: { object: SceneObject }) {
     findFont(text?.fontId ?? '')
 
   useObjectTransform(groupRef, object)
+  const aspect = useEditorStore((state) => state.project.aspect)
 
   if (!text) return null
 
   const anchorX = text.align === 'left' ? 'left' : text.align === 'right' ? 'right' : 'center'
 
+  // 文字太宽会冲出画框：按画幅可见宽度自动等比缩小（只缩不放，保留用户的有意缩放）。
+  const maxTextWidth = (FRAME_WIDTH[aspect] ?? 5.15) * 0.9
+  const estimatedWidth = estimateTextWidth(text.content, text.size, text.letterSpacing)
+  const fitScale = estimatedWidth > maxTextWidth ? Math.min(1, maxTextWidth / estimatedWidth) : 1
+
   const body = (
-    <Text
-      font={font.url}
-      fontSize={text.size}
-      color={text.color}
-      anchorX={anchorX}
-      anchorY="middle"
-      textAlign={text.align}
-      letterSpacing={text.letterSpacing}
-      lineHeight={text.lineHeight}
-      maxWidth={text.maxWidth > 0 ? text.maxWidth : undefined}
-      outlineWidth={0}
-      fillOpacity={text.opacity * fade}
-      material-transparent={text.opacity * fade < 0.999}
-      material-depthWrite={text.opacity * fade >= 0.999}
-    >
-      {text.content}
-    </Text>
+    <group scale={fitScale}>
+      <Text
+        font={font.url}
+        fontSize={text.size}
+        color={text.color}
+        anchorX={anchorX}
+        anchorY="middle"
+        textAlign={text.align}
+        letterSpacing={text.letterSpacing}
+        lineHeight={text.lineHeight}
+        maxWidth={text.maxWidth > 0 ? text.maxWidth : undefined}
+        outlineWidth={0}
+        fillOpacity={text.opacity * fade}
+        material-transparent={text.opacity * fade < 0.999}
+        material-depthWrite={text.opacity * fade >= 0.999}
+      >
+        {text.content}
+      </Text>
+    </group>
   )
 
   return (

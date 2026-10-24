@@ -1843,11 +1843,26 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
     const parsed = parseProjectText(text)
     if (parsed.errors.length > 0) return { errors: parsed.errors, warnings: [] }
     const { patch, warnings } = applyParsedProject(parsed, get())
+    // 没有任何可播放关键帧 = 空工程或输出被截断，不能应用——那会把上一版清成空白。
+    const nextObjects = patch.objects ?? []
+    const playableFrames = nextObjects.reduce((total, object) => total + (object.keyframes?.length ?? 0), 0)
+    if (nextObjects.length === 0 || playableFrames === 0) {
+      return { errors: ['工程文件没有任何关键帧（可能被截断），未应用'], warnings }
+    }
     if (sourcePath !== undefined) {
       patch.project = { ...(patch.project ?? get().project), sourcePath }
     }
     // One edit, one undo step: applying a file is a single deliberate act.
-    set({ ...patch, selectedObjectId: patch.objects?.[0]?.id ?? null, past: get().past, future: [] } as never)
+    // Also rewind the playhead to 0: the incoming project's own timeline starts
+    // there, and a stale playhead (e.g. left by the AI's 截图) would otherwise
+    // show an empty frame — every object keyframed before the old time.
+    set({
+      ...patch,
+      selectedObjectId: patch.objects?.[0]?.id ?? null,
+      timeline: { ...get().timeline, currentTime: 0, playing: false },
+      past: get().past,
+      future: [],
+    } as never)
     return { errors: [], warnings }
   },
 

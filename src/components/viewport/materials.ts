@@ -144,6 +144,11 @@ export function blankScreenMaterial(material: THREE.Material): void {
   // rather than a mirror picking up the environment.
   if (standard.roughness !== undefined) standard.roughness = 0.4
   if (standard.metalness !== undefined) standard.metalness = 0.05
+  // 屏幕始终不透明、写深度：透明度交给 fade 单独控制，不能残留半透明状态。
+  standard.transparent = false
+  standard.opacity = 1
+  standard.depthWrite = true
+  standard.depthTest = true
   standard.needsUpdate = true
 }
 

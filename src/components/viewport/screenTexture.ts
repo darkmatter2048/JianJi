@@ -123,6 +123,9 @@ export function createScreenRuntime(
   texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = 4
 
+  // 本地 blob / data 源不需要 CORS 属性，设了反而可能加载失败；只有跨域 http(s) 才要。
+  const needsCors = /^https?:/i.test(settings.src ?? '')
+
   let disposed = false
   let video: VideoWithFrameCallback | null = null
   let rafHandle = 0
@@ -142,7 +145,7 @@ export function createScreenRuntime(
     element.muted = settings.muted
     element.playsInline = true
     element.playbackRate = settings.rate
-    element.crossOrigin = 'anonymous'
+    if (needsCors) element.crossOrigin = 'anonymous'
     element.addEventListener('loadeddata', () => {
       paint(element, element.videoWidth, element.videoHeight)
       schedule()
@@ -153,7 +156,7 @@ export function createScreenRuntime(
     })
   } else {
     const image = new Image()
-    image.crossOrigin = 'anonymous'
+    if (needsCors) image.crossOrigin = 'anonymous'
     image.onload = () => paint(image, image.naturalWidth, image.naturalHeight)
     image.onerror = () => onError?.('图片解码失败：文件可能已损坏')
     image.src = settings.src ?? ''

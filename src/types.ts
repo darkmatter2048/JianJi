@@ -394,7 +394,7 @@ export type InspectorTab = 'object' | 'scene' | 'speed'
 export type ViewportCamera = 'free' | 'scene'
 
 /** Top-level sections of the asset rail. */
-export type LeftNav = 'resources' | 'devices' | 'text' | 'code'
+export type LeftNav = 'resources' | 'devices' | 'text' | 'code' | 'ai'
 
 /** The 设备 section's two pages. */
 export type DeviceTab = 'library' | 'scene'

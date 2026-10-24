@@ -229,6 +229,11 @@ export function DeviceModel({ object }: { object: SceneObject }) {
     material.color.setRGB(1, 1, 1)
     material.roughness = 0.16
     material.metalness = 0
+    // 屏幕始终不透明；透明度由 fade 单独走 emissiveIntensity + color，避免残留半透明。
+    material.transparent = false
+    material.opacity = 1
+    material.depthWrite = true
+    material.depthTest = true
     material.needsUpdate = true
 
     return () => {
