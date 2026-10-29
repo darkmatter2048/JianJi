@@ -4,3 +4,12 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/__ai/chat"
+  to = "/.netlify/functions/ai-chat"
+  status = 200
+  force = true
