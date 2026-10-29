@@ -32,3 +32,6 @@ Thumbs.db
 
 # Scratch / test artefacts (headless-browser profiles, temp screenshots)
 tmp/
+
+# Electron build output
+release

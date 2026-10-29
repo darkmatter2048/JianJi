@@ -1,0 +1,63 @@
+# electron-builder 配置：把 dist + electron 主进程打成桌面安装包。
+appId: online.dyblog.jianji
+productName: JianJi
+copyright: Copyright © 2021-2026 DaYe
+
+# 打包进 asar 的文件（主进程 + 依赖）。前端已由 Vite 打进 dist，走 extraResources。
+files:
+  - "**/*"
+  - "!src/**"
+  - "!public/**"
+  - "!dist/**"
+  - "!readme/**"
+  - "!promo/**"
+  - "!node_modules/**"
+  - "!**/*.md"
+  - "!**/*.ts"
+  - "!**/*.tsx"
+  - "!**/*.map"
+  - "!**/*.lock"
+  - "!**/*.log"
+  - "!tsconfig*.json"
+  - "!electron-builder.yml"
+  - "!vite.config.ts"
+  - "!index.html"
+  - "!vercel.json"
+  - "!netlify.toml"
+
+# 额外原样拷贝到 resources/（进程内用 process.resourcesPath 找）
+extraResources:
+  - from: dist
+    to: dist
+
+directories:
+  output: release
+
+win:
+  target:
+    - nsis
+  artifactName: ${name}-${version}-windows-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  shortcutName: 简辑
+
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.video
+  artifactName: ${name}-${version}-macos-${arch}.${ext}
+
+dmg:
+  title: JianJi ${version}
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Video
+  artifactName: ${name}-${version}-linux-${arch}.${ext}
+  maintainer: darkmatter2048 <https://github.com/darkmatter2048>

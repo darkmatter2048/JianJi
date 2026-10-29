@@ -22,6 +22,39 @@
 > [!tip]
 > #### 从 [中国大陆地区下载]() 最新版 JianJi
 
+## 一键部署
+
+> 部署的是**网页版**（纯静态）。桌面端（含本地工程/素材读盘、系统字体、AI 代理等完整功能）请下载下方的**桌面客户端**。
+
+| 平台 | 部署 |
+| --- | --- |
+| **Vercel** | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/darkmatter2048/JianJi) |
+| **Netlify** | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/darkmatter2048/JianJi) |
+| **Cloudflare Pages** | [![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-f38020?logo=cloudflare&logoColor=white)](https://dash.cloudflare.com/pages/new) |
+
+Cloudflare Pages 手动配置：**Build command** 填 `npm run build`，**输出目录** 填 `dist`（仓库里的 `vercel.json` / `netlify.toml` 已把 Vercel / Netlify 配好，一键即可）。
+
+## 桌面客户端
+
+GitHub Actions 在**打 tag（`v*`）或手动触发**时，自动编译三端客户端并发布 Release：
+
+| 平台 | 产物 |
+| --- | --- |
+| Windows | `.exe`（NSIS 安装包）|
+| macOS | `.dmg` + `.zip` |
+| Linux | `.AppImage` + `.deb` |
+
+本地手动打包：
+
+```bash
+npm install
+npm run electron:build:win     # Windows
+npm run electron:build:mac     # macOS（需在 macOS 上跑）
+npm run electron:build:linux   # Linux
+```
+
+桌面版内置了一个本地服务（工程/素材读盘、系统字体、AI 代理），功能最全；开发模式可用 `npm run electron:dev` 启动。
+
 ## 软件界面
 
 ![界面](readme/main.png)
