@@ -13,6 +13,8 @@ interface RenderedMessage {
   role: 'user' | 'assistant'
   text: string
   error?: boolean
+  /** 推理模型的思考过程（reasoning / reasoning_content）。 */
+  reasoning?: string
 }
 
 interface Conversation {
@@ -175,7 +177,10 @@ export function AIChatPanel() {
       const errorText = result.error
       setMessages((prev) => [...prev, { role: 'assistant', text: errorText, error: true }])
     } else if (result.text) {
-      setMessages((prev) => [...prev, { role: 'assistant', text: result.text }])
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: result.text, reasoning: result.reasoning },
+      ])
     }
     setPhase('idle')
   }
@@ -329,6 +334,12 @@ export function AIChatPanel() {
                 key={index}
                 className={`ai-chat__msg ai-chat__msg--${message.role}${message.error ? ' ai-chat__msg--error' : ''}`}
               >
+                {message.role === 'assistant' && message.reasoning ? (
+                  <details className="ai-chat__reasoning">
+                    <summary>{t('思考过程')}</summary>
+                    <div className="ai-chat__reasoning-body">{message.reasoning}</div>
+                  </details>
+                ) : null}
                 {message.role === 'assistant' ? <Markdown text={message.text} /> : message.text}
               </div>
             ))}

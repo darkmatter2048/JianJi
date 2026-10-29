@@ -1502,3 +1502,48 @@ input[type='color'] {
   align-items: center;
   gap: 2px;
 }
+
+/* AI 思考过程（折叠展示） */
+
+.ai-chat__reasoning {
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  color: var(--text-2, #8b94a8);
+}
+
+.ai-chat__reasoning summary {
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-2, #8b94a8);
+  font-size: 10.5px;
+  list-style: none;
+}
+
+.ai-chat__reasoning summary:hover {
+  color: var(--text-1, #c5ccda);
+}
+
+.ai-chat__reasoning summary::before {
+  content: '▸ ';
+  color: var(--accent, #00c2d1);
+}
+
+.ai-chat__reasoning[open] summary::before {
+  content: '▾ ';
+}
+
+.ai-chat__reasoning-body {
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: var(--bg-1, #161a23);
+  border-left: 2px solid var(--accent, #00c2d1);
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-2, #8b94a8);
+  font-size: 10.5px;
+  line-height: 1.5;
+  max-height: 220px;
+  overflow-y: auto;
+}
+

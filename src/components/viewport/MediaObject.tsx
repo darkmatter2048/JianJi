@@ -6,7 +6,7 @@ import { useEditorStore } from '../../store/editorStore'
 import type { SceneObject } from '../../types'
 import { isRotationGizmoPart } from './RotationGizmo'
 import { createScreenRuntime, type ScreenRuntime } from './screenTexture'
-import { useObjectDrag } from './useObjectDrag'
+import { shouldHandlePointerDown, useObjectDrag } from './useObjectDrag'
 import { useObjectTransform } from './useObjectTransform'
 
 /**
@@ -108,6 +108,7 @@ export function MediaObject({ object }: { object: SceneObject }) {
       name={object.id}
       visible={object.visible}
       onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+        if (!shouldHandlePointerDown(object, event)) return
         event.stopPropagation()
         selectObject(object.id)
         if (event.button !== 0) return

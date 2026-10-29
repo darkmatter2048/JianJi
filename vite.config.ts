@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { createReadStream, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { homedir } from 'node:os'
+import { Readable } from 'node:stream'
 import type { ServerResponse } from 'node:http'
 import aiProviders from './ai-providers.json'
 
@@ -404,43 +405,48 @@ function workspace(): Plugin {
               )
               return
             }
-            const controller = new AbortController()
-            const timer = setTimeout(() => controller.abort(), 60_000)
-            let upstream: Response
-            try {
-              upstream = await fetch(`${baseUrl}/chat/completions`, {
-                method: 'POST',
-                signal: controller.signal,
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${apiKey}`,
-                  // OpenRouter / OrcaRouter 归属约定：让上游识别这是本 OSS 应用带来的流量。
-                  // 头值必须为 ASCII（ByteString），中文标题不能直接写。
-                  'HTTP-Referer': 'https://github.com/UAE2/uae2-studio',
-                  'X-Title': 'UAE2 Studio',
-                },
-                body: JSON.stringify({
-                  model,
-                  messages: body.messages,
-                  tools: body.tools,
-                  tool_choice: 'auto',
-                }),
-              })
-            } finally {
-              clearTimeout(timer)
+            // 不设超时：推理模型可能思考很久，让它自然跑完。网络抖动（免费模型端点
+            // 尤其容易断连）重试 3 次，间隔递增。
+            let upstream: Response | null = null
+            let lastError: unknown = null
+            for (let attempt = 0; attempt < 3 && !upstream; attempt += 1) {
+              try {
+                upstream = await fetch(`${baseUrl}/chat/completions`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                    // OpenRouter / OrcaRouter 归属约定：让上游识别这是本 OSS 应用带来的流量。
+                    // 头值必须为 ASCII（ByteString），中文标题不能直接写。
+                    'HTTP-Referer': 'https://github.com/UAE2/uae2-studio',
+                    'X-Title': 'UAE2 Studio',
+                  },
+                  body: JSON.stringify({
+                    model,
+                    messages: body.messages,
+                    tools: body.tools,
+                    tool_choice: 'auto',
+                  }),
+                })
+              } catch (error) {
+                lastError = error
+                if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)))
+              }
             }
+            if (!upstream) throw lastError
             res.setHeader('Content-Type', 'application/json; charset=utf-8')
             res.statusCode = upstream.status
-            const text = await upstream.text()
-            res.end(text)
+            // 长输出边收边传，避免服务端缓冲整个响应、也不会在生成途中"看起来卡死"。
+            if (upstream.body) {
+              Readable.fromWeb(upstream.body as never).pipe(res)
+            } else {
+              res.end(await upstream.text())
+            }
           } catch (error) {
             res.statusCode = 502
-            const cause = error instanceof Error && error.name === 'AbortError'
-              ? '请求超时（60 秒无响应）'
-              : '网络连接失败，无法访问上游'
             res.end(
               JSON.stringify({
-                error: `${cause}。这是网络层错误，不是额度用尽——额度/鉴权问题会以 HTTP 402/401/429 返回。若持续出现，请检查网络、代理或上游服务状态。`,
+                error: `网络连接失败，无法访问上游（${error instanceof Error ? error.message : String(error)}）。已重试 3 次。这是网络层问题，不是额度用尽。`,
               }),
             )
           }

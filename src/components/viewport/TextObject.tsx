@@ -6,7 +6,8 @@ import { objectVisibilityAt } from '../../lib/keyframes'
 import { useEditorStore } from '../../store/editorStore'
 import type { ProjectAspect, SceneObject } from '../../types'
 import { isRotationGizmoPart } from './RotationGizmo'
-import { useObjectDrag } from './useObjectDrag'
+import { shouldHandlePointerDown, useObjectDrag } from './useObjectDrag'
+import { entranceEffect } from './entrance'
 import { useObjectTransform } from './useObjectTransform'
 
 /** 各画幅在拍摄距离处的可见宽度（单位，约等于 shot 相机的横向取景）。 */
@@ -51,12 +52,12 @@ export function TextObject({ object }: { object: SceneObject }) {
    * frame), so a text fade has to travel through the prop. It is exactly 1 except
    * during a fade, so this costs no extra renders otherwise.
    */
-  const fade = useEditorStore((state) =>
-    objectVisibilityAt(
-      state.objects.find((entry) => entry.id === object.id)?.keyframes ?? [],
-      state.timeline.currentTime,
-    ).opacity,
-  )
+  const fade = useEditorStore((state) => {
+    const live = state.objects.find((entry) => entry.id === object.id) ?? object
+    const visibility = objectVisibilityAt(live.keyframes, state.timeline.currentTime).opacity
+    const entrance = entranceEffect(live.entrance, live.appearAt, state.timeline.currentTime).opacity
+    return visibility * entrance
+  })
   const groupRef = useRef<THREE.Group>(null)
   const draggingRef = useRef(false)
   const dragCleanup = useRef<(() => void) | null>(null)
@@ -111,6 +112,7 @@ export function TextObject({ object }: { object: SceneObject }) {
       name={object.id}
       visible={object.visible}
       onPointerDown={(event) => {
+        if (!shouldHandlePointerDown(object, event)) return
         event.stopPropagation()
         selectObject(object.id)
         // Text is a 3D object like any other: left-drag moves it.

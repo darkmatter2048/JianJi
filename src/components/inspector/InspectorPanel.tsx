@@ -74,6 +74,45 @@ function ObjectTab() {
         />
       </Section>
 
+      {object.kind === 'text' || object.kind === 'media' ? (
+        <Section title={t('出场动画')}>
+          <SelectField
+            label={t('动效')}
+            value={object.entrance.type}
+            options={[
+              { value: 'none', label: t('无') },
+              { value: 'fade', label: t('淡入') },
+              { value: 'slide-up', label: t('上滑') },
+              { value: 'slide-down', label: t('下滑') },
+              { value: 'slide-left', label: t('左滑') },
+              { value: 'slide-right', label: t('右滑') },
+              { value: 'reveal', label: t('边缘展开') },
+              { value: 'scale', label: t('缩放') },
+              { value: 'rotate', label: t('旋转') },
+              { value: 'sling', label: t('甩入') },
+              { value: 'bounce', label: t('弹跳') },
+            ]}
+            onChange={(type) => useEditorStore.getState().setObjectEntrance(object.id, { type })}
+          />
+          <SliderField
+            label={t('时长')}
+            value={object.entrance.duration}
+            min={0.1}
+            max={3}
+            step={0.1}
+            onChange={(duration) => useEditorStore.getState().setObjectEntrance(object.id, { duration })}
+          />
+          <SliderField
+            label={t('延迟')}
+            value={object.entrance.delay}
+            min={0}
+            max={3}
+            step={0.05}
+            onChange={(delay) => useEditorStore.getState().setObjectEntrance(object.id, { delay })}
+          />
+        </Section>
+      ) : null}
+
       {object.kind === 'model' ? (
         <Section
           title={t('屏幕贴图')}

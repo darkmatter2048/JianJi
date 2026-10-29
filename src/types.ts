@@ -83,6 +83,31 @@ export interface SceneObject {
    * exists from that keyframe onwards, not for the whole video.
    */
   appearAt: number
+  /** 出场（入场）动画：文字/图片/视频出现时的动效。 */
+  entrance: EntranceAnimation
+}
+
+/* ------------------------------------------------------------- entrance -- */
+
+export type EntranceType =
+  | 'none'
+  | 'fade'
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'reveal'
+  | 'scale'
+  | 'rotate'
+  | 'sling'
+  | 'bounce'
+
+export interface EntranceAnimation {
+  type: EntranceType
+  /** 持续秒数。 */
+  duration: number
+  /** 从 `appearAt` 起的延迟秒数。 */
+  delay: number
 }
 
 /* ---------------------------------------------------------------- screen -- */

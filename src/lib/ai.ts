@@ -1,15 +1,14 @@
-import { requestShotCapture } from './capture'
 import { useEditorStore } from '../store/editorStore'
 import { PROVIDERS, type AIConfig } from './aiConfig'
 import type { MediaContext } from './mediaAnalysis'
 
 /**
- * AI 对话：客户端代理循环。
+ * AI 对话：客户端代理循环（一次成型）。
  *
  * The LLM is a director: it plans the storyboard first, then emits a complete
- * project file and applies it through `apply_project`, and iterates on the result
- * by looking at `capture_frame` screenshots. The loop runs here (not on the
- * server) because both tools touch the browser — the store and the WebGL shot.
+ * project file and applies it through `apply_project` — exactly once. There is
+ * no screenshot self-check and no re-apply loop, so the model cannot "review and
+ * rewrite" a finished piece into test markers.
  */
 
 export interface ChatMessage {
@@ -26,11 +25,11 @@ export interface ChatMessage {
 
 const SYSTEM_PROMPT = `你是「简辑」3D 动画编辑器的 AI 动画导演兼美术指导。你的目标不是"能用"，而是"精美"：把用户的需求拍成一条构图讲究、节奏有设计、动效有层次、转场有巧思的动画短片。
 
-【导演思维 —— 先构思，再动手，必须自检】
+【导演思维 —— 先构思，再动手，一次成型】
 1. 拿到需求先写「分镜脚本」：镜头号 / 时间 / 哪个对象 / 做什么动作 / 屏幕上放什么 / 用什么景别与构图。在心里把整条片从头到尾过一遍再写。
 2. 每个镜头都要有「设计意图」：为什么这样构图、为什么这个节奏、这段和下一段怎么接（转场）。不要机械地把对象往场景里一摆。
 3. 把分镜翻译成关键帧：每个动作至少两个关键帧（起点 + 终点），中间自动插值；复杂动作拆成多段（起势 → 主动作 → 收势），节奏快慢有变化。
-4. 写完后用 apply_project 应用，然后【必须】用 capture_frame 截图逐镜自查画面；构图丑、留白不对、文字看不清、节奏不对，就改工程文件重新 apply，反复迭代，直到自己满意才给最终答复。不要一次就交差。
+4. 想清楚后，**一次性**调用 apply_project 交付完整成片，然后给一句简要说明即可。不要反复应用、不要截图自查、不要留测试标记。
 
 【工程文件语言（完整语法，务必用对）】
 - 纯文本，第一行固定为 \`# 简辑 · 工程文件 v1\`。一行一件事；\`#\` 是注释；字段用空白分隔 \`key=value\`，值内不能有空格；列表 \`[a,b,c]\`；含空格的名字/路径加双引号（\`\\"\` 转义）；别名先声明后使用。
@@ -76,6 +75,11 @@ const SYSTEM_PROMPT = `你是「简辑」3D 动画编辑器的 AI 动画导演�
 - 转场常用做法：① 上一个对象在时间 t 淡出，下一个对象在 t 附近淡入（交叉叠化）；② 用动作遮挡（设备大幅旋转/掠过镜头）掩盖切换；③ 同一背景贯穿全片，只换前景对象，转场就自然。
 - 运动节奏：进→停→出要有快慢；不要所有对象匀速直线；让动作错开 0.2~0.4 秒先后发生，画面更有层次。
 
+【出场动画（entrance=…，写在对象声明行，可选）】
+- \`别名 = text "标题" entrance=slide-up entrance-duration=0.5 entrance-delay=0.2\`——文字/图片/视频都可用，让对象"出现"时带一个动效。
+- 类型：\`none\`（无）/ \`fade\`（淡入）/ \`slide-up\`（上滑）/ \`slide-down\`（下滑）/ \`slide-left\`（左滑）/ \`slide-right\`（右滑）/ \`reveal\`（从边缘展开）/ \`scale\`（缩放）/ \`rotate\`（旋转）/ \`sling\`（甩入）/ \`bounce\`（弹跳）。
+- 可选 \`entrance-duration=<秒>\`（默认 0.6）、\`entrance-delay=<秒>\`（默认 0，从 appear 之后算）。
+
 【取景范围（算清楚内容会不会出画）】
 - 摄像机固定：焦距 fov=30°，距目标点 [0,0.5,0] 约 5.4 单位，从正面稍俯视。画面中心就是原点附近：地面中心 [0,0,0]，视觉中心略高于地面约 0.5。
 - 对象会自动缩放到「最长边 = 2 单位」并落在 y=0 地面。所以"一台设备 ≈ 2 单位"是构图的基本尺度，约占画面高度的 2/3。
@@ -95,7 +99,8 @@ const SYSTEM_PROMPT = `你是「简辑」3D 动画编辑器的 AI 动画导演�
 - 手机 s 必须写 \`-\`；笔记本 s 是 0..135 / 0..180。
 - 无贴图写 \`f=-\`；默认屏幕是空白深色。
 - 每个对象至少两个关键帧，否则视频时长为 0。
-- apply_project 的 text 必须是完整工程文件，不能只给片段。**输出有长度上限，工程文件要精简——每个对象 3~6 帧就够，宁短勿断；太长会被截断导致整段作废。应用后必须用 capture_frame 截图确认真的有画面（至少截 1~2 个时间点），别只报"已应用"就交差。**
+- apply_project 的 text 必须是完整工程文件，不能只给片段。**输出有长度上限，工程文件要精简——每个对象 3~6 帧就够，宁短勿断；太长会被截断导致整段作废。**
+- **一次成型（重要）**：只调用一次 apply_project，把完整成片直接交付；不要反复应用、不要自查、不要用坐标标记/测试文字/占位对象。分镜在心里先想清楚，一次写对，写完给一句简要说明即可。
 - 构图：主体别总在正中央，善用三分法；文字留出安全边距；注意对象之间不要重叠打架。
 - **空间层级**：+z 朝向镜头。设备默认在 z=0；文字、贴图等前景对象要放在 **z ≥ 0**（与设备同面或更靠镜头，比如 z=0 或 z=+0.5），放在 z < 0（如 z=-1）会被设备挡住、看不到。`
 
@@ -104,7 +109,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'apply_project',
-      description: '应用一份完整的工程文件（DSL 文本）到编辑器，生成或替换动画',
+      description: '一次性应用完整工程文件（DSL 文本）到编辑器，生成动画',
       parameters: {
         type: 'object',
         properties: {
@@ -117,56 +122,9 @@ const TOOLS = [
       },
     },
   },
-  {
-    type: 'function',
-    function: {
-      name: 'capture_frame',
-      description: '截图当前（或指定时刻）的画面，返回压缩 JPEG，用于查看关键帧效果',
-      parameters: {
-        type: 'object',
-        properties: {
-          time: { type: 'number', description: '可选：先跳到这个时间点（秒）再截图' },
-        },
-      },
-    },
-  },
 ]
 
 /* ------------------------------------------------------------ tools ---- */
-
-async function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('图片加载失败'))
-    img.src = src
-  })
-}
-
-/** 压缩截图以节省 token：等比缩小到最长边 ≤ 512，JPEG q=0.7。 */
-async function captureCompressed(time?: number): Promise<{ image: string; width: number; height: number }> {
-  if (time !== undefined) useEditorStore.getState().seek(Math.max(0, time))
-  // Let the store flush and the render pass draw one frame.
-  await new Promise((resolve) => setTimeout(resolve, 250))
-  // 兜底超时：渲染通道若没响应（后台标签 / 上下文丢失），不能把代理循环挂死。
-  const png = await Promise.race([
-    requestShotCapture(),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
-  ])
-  if (!png) throw new Error('截图超时：渲染通道没有响应')
-  const img = await loadImage(png)
-  const maxEdge = 512
-  const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight))
-  const width = Math.max(1, Math.round(img.naturalWidth * scale))
-  const height = Math.max(1, Math.round(img.naturalHeight * scale))
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('截图失败：无法创建画布')
-  ctx.drawImage(img, 0, 0, width, height)
-  return { image: canvas.toDataURL('image/jpeg', 0.7), width, height }
-}
 
 async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
   if (name === 'apply_project') {
@@ -188,15 +146,6 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       applied: result.errors.length === 0,
     })
   }
-  if (name === 'capture_frame') {
-    const time = typeof args.time === 'number' ? args.time : undefined
-    const shot = await captureCompressed(time)
-    // 多模态工具结果：文本 + 图片（仅视觉模型会调用）。
-    return [
-      { type: 'text', text: `画面截图（${shot.width}×${shot.height}，已压缩）` },
-      { type: 'image_url', image_url: { url: shot.image } },
-    ]
-  }
   return JSON.stringify({ error: `未知工具 ${name}` })
 }
 
@@ -211,10 +160,8 @@ export async function runAgent(
   projectText: string,
   config: AIConfig,
   mediaContext: MediaContext,
-): Promise<{ text: string; error?: string }> {
+): Promise<{ text: string; reasoning?: string; error?: string }> {
   const vision = PROVIDERS[config.provider].vision
-  // 纯文本供应商（DeepSeek）不支持图像，也不该拿到截图工具。
-  const tools = vision ? TOOLS : TOOLS.filter((tool) => tool.function.name !== 'capture_frame')
 
   const messages: ChatMessage[] = [
     { role: 'system', content: `${SYSTEM_PROMPT}\n\n【可用本地素材】\n${mediaContext.text}` },
@@ -234,6 +181,8 @@ export async function runAgent(
   messages.push({ role: 'user', content: `当前工程文件：\n\`\`\`\n${projectText}\n\`\`\`` })
   messages.push(...history)
 
+  const processParts: string[] = []
+  let applied = false
   for (let round = 0; round < 12; round += 1) {
     const response = await fetch('/__ai/chat', {
       method: 'POST',
@@ -244,7 +193,7 @@ export async function runAgent(
         apiKey: config.apiKey,
         model: config.model,
         messages,
-        tools,
+        tools: TOOLS,
       }),
     })
     if (!response.ok) {
@@ -275,13 +224,25 @@ export async function runAgent(
       }
     }
     const data = (await response.json()) as {
-      choices?: Array<{ message: { role: string; content?: string; tool_calls?: ChatMessage['tool_calls'] } }>
+      choices?: Array<{
+        message: {
+          role: string
+          content?: string
+          /** OrcaRouter / OpenRouter 推理模型的思考内容。 */
+          reasoning?: string
+          /** DeepSeek 的思考内容字段名。 */
+          reasoning_content?: string
+          tool_calls?: ChatMessage['tool_calls']
+        }
+      }>
     }
     const message = data.choices?.[0]?.message
     if (!message) return { text: '', error: 'AI 返回为空' }
 
     if (message.tool_calls && message.tool_calls.length > 0) {
       const assistantContent = message.content ?? ''
+      // 中间叙述（"我先规划分镜…"）也算思考过程，给非推理模型也有得看。
+      if (assistantContent.trim()) processParts.push(assistantContent.trim())
       // 工具调用的中间消息只在本轮 messages 里流转，不进历史（否则下次会回放
       // 没有配套 tool 结果的 assistant 消息，DeepSeek/OpenAI 都会报错）。
       messages.push({ role: 'assistant', content: assistantContent, tool_calls: message.tool_calls })
@@ -293,10 +254,23 @@ export async function runAgent(
           args = {}
         }
         let result: unknown
-        try {
-          result = await executeTool(call.function.name, args)
-        } catch (error) {
-          result = JSON.stringify({ error: error instanceof Error ? error.message : String(error) })
+        if (call.function.name === 'apply_project' && applied) {
+          // 一次成型：已经成功应用过，之后一律拒绝，防止模型"自查乱改"覆盖成片。
+          result = JSON.stringify({
+            ok: false,
+            applied: false,
+            errors: ['工程已应用，本次为一次成型，不再接受重复应用'],
+          })
+        } else {
+          try {
+            result = await executeTool(call.function.name, args)
+            if (call.function.name === 'apply_project') {
+              const parsed = JSON.parse(result as string) as { ok?: boolean }
+              if (parsed.ok) applied = true
+            }
+          } catch (error) {
+            result = JSON.stringify({ error: error instanceof Error ? error.message : String(error) })
+          }
         }
         messages.push({ role: 'tool', tool_call_id: call.id, content: result })
       }
@@ -304,8 +278,10 @@ export async function runAgent(
     }
 
     const text = message.content ?? ''
+    const reasoning = message.reasoning ?? message.reasoning_content ?? ''
+    if (reasoning.trim()) processParts.push(reasoning.trim())
     if (text) history.push({ role: 'assistant', content: text })
-    return { text }
+    return { text, reasoning: processParts.length > 0 ? processParts.join('\n\n') : undefined }
   }
 
   return { text: '', error: '达到最大工具调用轮数' }

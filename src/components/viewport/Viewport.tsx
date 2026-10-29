@@ -193,7 +193,7 @@ export function Viewport() {
           className="viewport__canvas"
           shadows
           dpr={[1, 2]}
-          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, localClippingEnabled: true }}
           camera={{ position: [3.4, 2.2, 4.4], fov: 30, near: 0.05, far: 200 }}
           onCreated={(state) => {
             state.gl.toneMapping = THREE.ACESFilmicToneMapping

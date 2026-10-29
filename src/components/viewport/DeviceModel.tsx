@@ -16,7 +16,7 @@ import {
   collectMaterials,
 } from './materials'
 import { isRotationGizmoPart } from './RotationGizmo'
-import { useObjectDrag } from './useObjectDrag'
+import { shouldHandlePointerDown, useObjectDrag } from './useObjectDrag'
 import {
   lastFinishedClip,
   objectVisibilityAt,
@@ -386,8 +386,10 @@ export function DeviceModel({ object }: { object: SceneObject }) {
   return (
     <group
       ref={groupRef}
+      name={object.id}
       visible={object.visible}
       onPointerDown={(event) => {
+        if (!shouldHandlePointerDown(object, event)) return
         event.stopPropagation()
         selectObject(object.id)
         if (event.button !== 0) return

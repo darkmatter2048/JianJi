@@ -6,6 +6,7 @@ import { createSpeedCurve, DEFAULT_MAX_SPEED } from './speedCurve'
 import { ASPECT_RATIO } from '../types'
 import type {
   BackgroundSettings,
+  EntranceAnimation,
   HideMode,
   MediaFit,
   SpeedCurve,
@@ -197,6 +198,11 @@ export function toProjectText(state: EditorSnapshot): string {
     declaration.push(`color=${object.color}`)
     if (object.appearAt > 0) declaration.push(`appear=${f(object.appearAt, 2)}`)
     if (!object.visible) declaration.push('off')
+    if (object.entrance.type !== 'none') {
+      declaration.push(`entrance=${object.entrance.type}`)
+      if (object.entrance.duration !== 0.6) declaration.push(`entrance-duration=${f(object.entrance.duration, 2)}`)
+      if (object.entrance.delay !== 0) declaration.push(`entrance-delay=${f(object.entrance.delay, 2)}`)
+    }
     lines.push('', `# ${object.kind === 'model' ? '3D 模型' : object.kind === 'media' ? '图片 / 视频平面' : '文字'}`, declaration.join(' '))
     if (object.kind === 'text' && object.text) {
       lines.push(`  text ${textFields(object.text)} content="${object.text.content.replace(/"/g, '\\"')}"`)
@@ -304,6 +310,7 @@ export interface ParsedObject {
   color: string | null
   appearAt: number
   visible: boolean
+  entrance: EntranceAnimation
   text: Partial<TextSettings> | null
   frames: ParsedFrame[]
   clips: ParsedClip[]
@@ -358,6 +365,15 @@ function num(map: Map<string, string>, key: string, fallback: number): number {
   if (raw === undefined) return fallback
   const value = Number(raw)
   return Number.isFinite(value) ? value : fallback
+}
+
+/** `entrance=slide-up entrance-duration=0.8 entrance-delay=0.2` → 出场动画。 */
+function entranceFrom(map: Map<string, string>): EntranceAnimation {
+  return {
+    type: (map.get('entrance') as EntranceAnimation['type']) ?? 'none',
+    duration: num(map, 'entrance-duration', 0.6),
+    delay: num(map, 'entrance-delay', 0),
+  }
 }
 
 function parseVec(raw: string | undefined, digits = 2): Vec3 | null {
@@ -586,6 +602,7 @@ export function parseProjectText(text: string): ParsedProject {
         color: map.get('color') ?? null,
         appearAt: num(map, 'appear', 0),
         visible: !map.has('off'),
+        entrance: entranceFrom(map),
         text: null,
         frames: [],
         clips: [],
@@ -605,6 +622,7 @@ export function parseProjectText(text: string): ParsedProject {
         color: map.get('color') ?? null,
         appearAt: num(map, 'appear', 0),
         visible: !map.has('off'),
+        entrance: entranceFrom(map),
         text: null,
         frames: [],
         clips: [],
@@ -624,6 +642,7 @@ export function parseProjectText(text: string): ParsedProject {
         color: map.get('color') ?? null,
         appearAt: num(map, 'appear', 0),
         visible: !map.has('off'),
+        entrance: entranceFrom(map),
         text: {},
         frames: [],
         clips: [],
@@ -913,6 +932,7 @@ export function applyParsedProject(
       screenClips: clips,
       keyframes: frames2,
       appearAt: born,
+      entrance: parsedObject.entrance,
     })
   }
 

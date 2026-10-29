@@ -42,6 +42,7 @@ import type {
   CameraSettings,
   DeviceTab,
   EditorSnapshot,
+  EntranceAnimation,
   FontAsset,
   HideMode,
   InspectorTab,
@@ -98,6 +99,10 @@ export const sliderToZoom = (value: number): number =>
 function defaultMaterial(): MaterialSettings {
   const preset = MATERIAL_PRESETS[0]
   return { enabled: false, presetId: preset.id, ...preset.settings }
+}
+
+function defaultEntrance(): EntranceAnimation {
+  return { type: 'none', duration: 0.6, delay: 0 }
 }
 
 /** Lid state for an asset that declares a hinge; `null` for everything else. */
@@ -257,6 +262,7 @@ export function createDefaultProject(): EditorSnapshot {
     color: '#f5a524',
     screenClips: [],
     appearAt: 0,
+    entrance: defaultEntrance(),
     keyframes: [],
   }
 
@@ -328,6 +334,7 @@ export interface EditorActions {
   setObjectHideMode: (id: string, mode: HideMode) => void
   setObjectLocked: (id: string, locked: boolean) => void
   renameObject: (id: string, name: string) => void
+  setObjectEntrance: (id: string, patch: Partial<EntranceAnimation>) => void
   updateObjectMaterial: (id: string, patch: Partial<MaterialSettings>) => void
   setMaterialEnabled: (id: string, enabled: boolean) => void
   applyMaterialPreset: (id: string, presetId: string) => void
@@ -788,6 +795,7 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
         // Born at the playhead: no keyframes before it, so it simply is not in
         // the shot yet.
         appearAt: born,
+        entrance: defaultEntrance(),
         keyframes: [
           createObjectKeyframe(born, {
             transform,
@@ -843,6 +851,7 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
         color: nextObjectColor(state.objects),
         screenClips: [],
         appearAt: born,
+        entrance: defaultEntrance(),
         keyframes: [
           createObjectKeyframe(born, {
             transform,
@@ -891,6 +900,7 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
         color: nextObjectColor(state.objects),
         screenClips: [],
         appearAt: born,
+        entrance: defaultEntrance(),
         keyframes: [
           createObjectKeyframe(born, {
             transform,
@@ -1357,6 +1367,13 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
   renameObject: (id, name) =>
     set((state) => ({
       objects: state.objects.map((object) => (object.id === id ? { ...object, name } : object)),
+    })),
+
+  setObjectEntrance: (id, patch) =>
+    set((state) => ({
+      objects: state.objects.map((object) =>
+        object.id === id ? { ...object, entrance: { ...object.entrance, ...patch } } : object,
+      ),
     })),
 
   updateObjectMaterial: (id, patch) =>

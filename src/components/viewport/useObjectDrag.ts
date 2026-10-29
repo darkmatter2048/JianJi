@@ -2,6 +2,7 @@ import { useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { beginGesture, endGesture } from '../../lib/gesture'
+import { objectVisibilityAt } from '../../lib/keyframes'
 import { useEditorStore } from '../../store/editorStore'
 import type { SceneObject, Vec3 } from '../../types'
 
@@ -77,4 +78,30 @@ export function useObjectDrag(
     },
     [camera, controls, dragCleanup, draggingRef, object.id, object.transform.position, viewportSize.height],
   )
+}
+
+/**
+ * 这次 pointer-down 该不该由 `object` 处理。
+ *
+ * 两个规则：
+ * 1. 对象此刻必须**实际可见**——three.js 的射线不检查可见性，隐藏对象的网格
+ *    仍会被命中，导致"那一帧明明隐藏了还拖得动"；
+ * 2. 若选中的是**另一个**对象、而且它也在同一条射线上（被当前对象挡住），则让
+ *    位给选中的对象——实现"选中哪个拖动的是哪个"。
+ */
+export function shouldHandlePointerDown(object: SceneObject, event: ThreeEvent<PointerEvent>): boolean {
+  const state = useEditorStore.getState()
+  if (!object.visible) return false
+  const visibility = objectVisibilityAt(object.keyframes, state.timeline.currentTime)
+  if (visibility.hidden) return false
+  if (state.timeline.currentTime < object.appearAt - 1e-3) return false
+
+  const selectedId = state.selectedObjectId
+  if (selectedId && selectedId !== object.id) {
+    const selectedAlsoHit = event.intersections.some(
+      (hit) => (hit.eventObject as THREE.Object3D | undefined)?.name === selectedId,
+    )
+    if (selectedAlsoHit) return false
+  }
+  return true
 }
