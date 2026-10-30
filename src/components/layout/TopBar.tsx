@@ -10,8 +10,10 @@ import {
 } from '../../lib/workspace'
 import {
   canPickDirectory,
+  hasNativePicker,
   mediaFilesFor,
   missingResources,
+  nativePickFolder,
   pickFolder,
   projectCandidates,
   readFileText,
@@ -229,6 +231,15 @@ export function TopBar() {
 
   /** The one-click path: pick the folder the code lives in, read it directly. */
   const onPickFolder = async () => {
+    // 桌面端：原生选工程文件 → 以它所在目录为根，按相对路径读素材。
+    if (hasNativePicker()) {
+      await guard('导入工程', async () => {
+        const entries = await nativePickFolder()
+        if (!entries || entries.length === 0) return
+        await importFolder(entries)
+      })
+      return
+    }
     if (!canPickDirectory()) {
       folderRef.current?.click()
       return
@@ -238,6 +249,15 @@ export function TopBar() {
       if (!entries || entries.length === 0) return
       await importFolder(entries)
     })
+  }
+
+  /** 「导入工程」按钮：桌面端走原生目录读取，网页版走单文件选择。 */
+  const onImportProject = () => {
+    if (hasNativePicker()) {
+      void onPickFolder()
+      return
+    }
+    fileRef.current?.click()
   }
 
   const onExportFrame = async () => {
@@ -543,7 +563,7 @@ export function TopBar() {
             <button
               type="button"
               className="export__option"
-              onClick={() => fileRef.current?.click()}
+              onClick={() => onImportProject()}
             >
               <FileCode2 size={18} />
               <span>

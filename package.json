@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "main": "electron/main.cjs",
-  "description": "UAE2 Studio — a Rotato-like 3D video editor for the web",
+  "description": "jianji — a Rotato-like 3D video editor for the web",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && vite build",

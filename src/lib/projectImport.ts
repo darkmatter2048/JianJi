@@ -194,3 +194,37 @@ export function withRelativePath(file: File, path: string): File {
   }
   return file
 }
+
+/* --------------------------------------------------- native desktop picker -- */
+
+/** 桌面端 preload 暴露的原生导入桥。 */
+interface NativeEntry {
+  path: string
+  name: string
+  type: string
+  data: ArrayBuffer
+}
+interface DesktopBridge {
+  pickProjectFolder: () => Promise<{ projectPath: string; entries: NativeEntry[] } | null>
+}
+
+/** 是否运行在桌面端（Electron 注入了 window.__desktop__）。 */
+export function hasNativePicker(): boolean {
+  const bridge = (window as unknown as { __desktop__?: DesktopBridge }).__desktop__
+  return typeof bridge?.pickProjectFolder === 'function'
+}
+
+/**
+ * 桌面端「导入工程」：原生选出 .txt/.uae2，主进程读出它所在目录里工程点名的
+ * 素材，这里把它们包成带相对路径的 File，再走和网页版「导入文件夹」相同的逻辑。
+ */
+export async function nativePickFolder(): Promise<FolderEntry[] | null> {
+  const bridge = (window as unknown as { __desktop__?: DesktopBridge }).__desktop__
+  if (!bridge?.pickProjectFolder) return null
+  const result = await bridge.pickProjectFolder()
+  if (!result) return null
+  return result.entries.map((entry) => ({
+    path: entry.path,
+    file: withRelativePath(new File([entry.data], entry.name, { type: entry.type }), entry.path),
+  }))
+}

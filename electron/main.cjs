@@ -9,8 +9,11 @@
  *   - GET  /__fonts             → 字体目录（内置 + 系统字体）
  *   - GET  /__fonts/file        → 读系统字体
  *   - POST /__ai/chat           → OrcaRouter / DeepSeek 代理
+ *
+ * 另通过 IPC 暴露「以工程文件所在目录为根」的导入：原生文件对话框选出
+ * .txt/.uae2，读出它所在目录里工程点名的素材，交给渲染层按相对路径导入。
  */
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron')
 const http = require('node:http')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -23,7 +26,7 @@ const MEDIA_EXTENSIONS = new Set([
   '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac',
 ])
 const FONT_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2'])
-const PROJECT_EXTENSIONS = new Set(['.txt'])
+const PROJECT_EXTENSIONS = new Set(['.txt', '.uae2'])
 const NOT_PROJECTS = new Set(['license', 'readme', 'copying', 'changelog', 'notice', 'authors'])
 const EXAMPLE_DIRECTORIES = ['promo']
 const SKIP_DIRECTORIES = new Set(['node_modules', 'dist', 'dist-ssr', '.git', '.vite', 'tmp', 'coverage'])
@@ -34,6 +37,20 @@ const CONTENT_TYPES = {
   '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.ogv': 'video/ogg',
   '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.flac': 'audio/flac',
   '.txt': 'text/plain; charset=utf-8',
+  // 网页静态资源 + 字体：缺了这些会把 index.html / JS / CSS / 字体当 octet-stream
+  // 下载，Electron 会弹「保存文件」对话框、窗口一片空白。
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.map': 'application/json',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
 }
 
 let AI_PROVIDERS = {}
@@ -377,6 +394,7 @@ function createWindow(url) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   })
   mainWindow.loadURL(url)
@@ -388,6 +406,57 @@ function createWindow(url) {
     mainWindow = null
   })
 }
+
+/* --------------------------------------------------- 原生工程文件导入 ---- */
+
+/**
+ * 递归读出 `dir` 里工程可能用到的文件：工程文本（.txt/.uae2）和图片/视频/音频。
+ * 其它文件（渲染产物、笔记等）不读，避免把整个目录塞进内存。
+ */
+function readDirectoryForImport(dir, prefix = '', out = [], depth = 0) {
+  if (depth > 8) return out
+  let entries
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return out
+  }
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue
+    const full = path.join(dir, entry.name)
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name
+    if (entry.isDirectory()) {
+      if (SKIP_DIRECTORIES.has(entry.name)) continue
+      readDirectoryForImport(full, rel, out, depth + 1)
+    } else if (entry.isFile()) {
+      const ext = path.extname(entry.name).toLowerCase()
+      if (!MEDIA_EXTENSIONS.has(ext) && !PROJECT_EXTENSIONS.has(ext)) continue
+      try {
+        const data = fs.readFileSync(full)
+        out.push({ path: rel, name: entry.name, type: contentType(entry.name), data })
+      } catch {
+        /* 读不到就跳过 */
+      }
+    }
+  }
+  return out
+}
+
+ipcMain.handle('desktop:pick-project-folder', async () => {
+  const options = {
+    title: '选择工程文件',
+    properties: ['openFile'],
+    filters: [{ name: '工程文件', extensions: ['txt', 'uae2'] }],
+  }
+  const result = mainWindow
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options)
+  if (result.canceled || result.filePaths.length === 0) return null
+  const projectPath = result.filePaths[0]
+  const dir = path.dirname(projectPath)
+  // 工程文件本身也在 entries 里（path=文件名），渲染层用它定位工程并算相对路径。
+  return { projectPath, entries: readDirectoryForImport(dir) }
+})
 
 app.whenReady().then(async () => {
   // 开发模式（electron .）：root 是项目根、dist 是 vite 输出。
