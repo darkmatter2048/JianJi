@@ -19,7 +19,7 @@
 > [!CAUTION]  
 > #### 🔔 如有一般性问题请前往 [Discussions](https://github.com/darkmatter2048/JianJi/discussions) 讨论区，***Issues*** 仅用于错误报告和功能请求。
 
-## 桌面
+## 如何使用
 
 > 本地工程/素材读盘、系统字体等功能仅支持[桌面端](https://github.com/darkmatter2048/JianJi/releases)
 
