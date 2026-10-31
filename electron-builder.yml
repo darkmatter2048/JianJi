@@ -36,6 +36,7 @@ directories:
 win:
   target:
     - nsis
+  icon: build/icon.png
   artifactName: ${name}-${version}-windows-${arch}.${ext}
 
 nsis:
@@ -49,6 +50,7 @@ mac:
     - dmg
     - zip
   category: public.app-category.video
+  icon: build/icon.png
   artifactName: ${name}-${version}-macos-${arch}.${ext}
 
 dmg:
@@ -59,5 +61,6 @@ linux:
     - AppImage
     - deb
   category: Video
+  icon: build/icon.png
   artifactName: ${name}-${version}-linux-${arch}.${ext}
   maintainer: darkmatter2048 <https://github.com/darkmatter2048>

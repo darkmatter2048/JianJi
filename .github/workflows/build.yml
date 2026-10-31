@@ -47,7 +47,7 @@ jobs:
         run: npm run build
 
       - name: Package desktop client
-        run: npx electron-builder --${{ matrix.target }} --publish never
+        run: npx electron-builder --${{ matrix.target }} --x64 --arm64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # macOS 无签名证书时跳过签名，产出未签名 dmg/zip
