@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { create } from 'zustand'
+import { storageGet, storageSet } from './storage'
 
 /**
  * 界面语言.
@@ -380,7 +381,7 @@ export function translate(
 
 function detectLocale(): Locale {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = storageGet(STORAGE_KEY)
     if (stored === 'zh' || stored === 'en') return stored
   } catch {
     /* storage unavailable */
@@ -395,7 +396,7 @@ export const useLocaleStore = create<{
   locale: detectLocale(),
   setLocale: (locale) => {
     try {
-      localStorage.setItem(STORAGE_KEY, locale)
+      storageSet(STORAGE_KEY, locale)
     } catch {
       /* storage unavailable */
     }

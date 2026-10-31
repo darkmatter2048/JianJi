@@ -4,6 +4,7 @@ import { toProjectText } from '../../lib/projectText'
 import { runAgent, type ChatMessage } from '../../lib/ai'
 import { PROVIDERS, loadAIConfig, saveAIConfig, type AIProvider, type AIConfig } from '../../lib/aiConfig'
 import { gatherMediaContext } from '../../lib/mediaAnalysis'
+import { storageGet, storageSet } from '../../lib/storage'
 import { downloadBlob } from '../../lib/videoExport'
 import { useEditorStore } from '../../store/editorStore'
 import { useT } from '../../lib/i18n'
@@ -28,7 +29,7 @@ const CONVERSATIONS_KEY = 'uae2.ai.conversations'
 
 function loadConversations(): Conversation[] {
   try {
-    const raw = localStorage.getItem(CONVERSATIONS_KEY)
+    const raw = storageGet(CONVERSATIONS_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw) as Conversation[]
     return Array.isArray(parsed)
@@ -50,9 +51,9 @@ function loadConversations(): Conversation[] {
 
 function saveConversations(list: Conversation[]): void {
   try {
-    localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(list))
+    storageSet(CONVERSATIONS_KEY, JSON.stringify(list))
   } catch {
-    /* localStorage unavailable — history lives only for this session */
+    /* 存储不可用——历史只存活于本次会话 */
   }
 }
 

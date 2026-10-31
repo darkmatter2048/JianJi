@@ -368,20 +368,61 @@ function serveStatic(req, res, dist) {
 let mainWindow = null
 let httpServer = null
 
-function startServer(root, dist, fontsDir) {
-  const server = http.createServer((req, res) => {
+function makeHandler(root, dist, fontsDir) {
+  return (req, res) => {
     try {
       if (!handleLocal(req, res, root, fontsDir)) serveStatic(req, res, dist)
     } catch (error) {
       res.statusCode = 500
       res.end(String(error?.message || error))
     }
-  })
-  httpServer = server
+  }
+}
+
+function startServer(root, dist, fontsDir) {
   return new Promise((resolve) => {
+    const server = http.createServer(makeHandler(root, dist, fontsDir))
+    httpServer = server
+    // 随机端口即可：渲染层的本地存储走 userData 文件（storage-get/set），
+    // 不再依赖 origin/端口，所以端口随机也不影响 AI 历史与配置的持久化。
     server.listen(0, '127.0.0.1', () => resolve(server.address().port))
   })
 }
+
+/* ---------------------------------------------- 本地存储（与端口无关） ---- */
+
+function appStatePath() {
+  return path.join(app.getPath('userData'), 'app-state.json')
+}
+
+function readAppState() {
+  try {
+    const data = JSON.parse(fs.readFileSync(appStatePath(), 'utf8'))
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeAppState(state) {
+  try {
+    fs.mkdirSync(path.dirname(appStatePath()), { recursive: true })
+    fs.writeFileSync(appStatePath(), JSON.stringify(state, null, 2), 'utf8')
+  } catch {
+    /* 写盘失败就算了 */
+  }
+}
+
+ipcMain.on('desktop:storage-get', (event, key) => {
+  const state = readAppState()
+  event.returnValue = state[key] ?? null
+})
+
+ipcMain.on('desktop:storage-set', (_event, key, value) => {
+  const state = readAppState()
+  state[key] = value
+  writeAppState(state)
+})
 
 function createWindow(url) {
   mainWindow = new BrowserWindow({

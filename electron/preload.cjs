@@ -2,6 +2,7 @@
  * 桌面端渲染层桥：
  * - pickProjectFolder：以工程文件所在目录为根的原生导入
  * - setDirty / onSaveAndClose / saveAndCloseDone：关闭前的「是否保存」保护
+ * - storageGet / storageSet：把渲染层的本地存储落到 userData 文件，跟端口无关
  */
 const { contextBridge, ipcRenderer } = require('electron')
 
@@ -19,4 +20,10 @@ contextBridge.exposeInMainWorld('__desktop__', {
 
   /** 渲染层保存完成，通知主进程可以关窗。 */
   saveAndCloseDone: () => ipcRenderer.send('desktop:save-and-close-done'),
+
+  /** 同步读一条本地存储（落在 userData/app-state.json）。 */
+  storageGet: (key) => ipcRenderer.sendSync('desktop:storage-get', String(key)),
+
+  /** 异步写一条本地存储。 */
+  storageSet: (key, value) => ipcRenderer.send('desktop:storage-set', String(key), value),
 })

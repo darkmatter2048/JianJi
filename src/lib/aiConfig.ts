@@ -3,9 +3,11 @@
  *
  * 供应商的**唯一来源**是仓库根目录的 `ai-providers.json`——加一个供应商 = 在 JSON
  * 里加一条，这里和 `vite.config.ts` 都从它派生，不会各写一套造成漂移。
- * 运行时配置（选哪个、key、model、baseUrl）存在 localStorage，方便图形化改。
+ * 运行时配置（选哪个、key、model、baseUrl）走 storage（桌面端落 userData 文件，
+ * 网页版落 localStorage），方便图形化改。
  */
 import registry from '../../ai-providers.json'
+import { storageGet, storageSet } from './storage'
 
 export type AIProvider = keyof typeof registry.providers
 
@@ -62,7 +64,7 @@ export function defaultConfig(provider: AIProvider): AIConfig {
 
 export function loadAIConfig(): AIConfig {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = storageGet(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AIConfig>
       const provider: AIProvider = PROVIDER_IDS.includes(parsed.provider as AIProvider)
@@ -84,8 +86,8 @@ export function loadAIConfig(): AIConfig {
 
 export function saveAIConfig(config: AIConfig): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+    storageSet(STORAGE_KEY, JSON.stringify(config))
   } catch {
-    /* localStorage unavailable (private mode) — the config just lives for this session */
+    /* 不可用（隐私模式等）——配置只存活于本次会话 */
   }
 }
