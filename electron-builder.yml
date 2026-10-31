@@ -35,15 +35,8 @@ directories:
 
 win:
   target:
-    - nsis
+    - dir
   icon: build/icon.png
-  artifactName: ${name}-${version}-windows-${arch}.${ext}
-
-nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
-  createDesktopShortcut: always
-  shortcutName: 简辑
 
 mac:
   target:

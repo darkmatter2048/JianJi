@@ -53,6 +53,19 @@ jobs:
           # macOS 无签名证书时跳过签名，产出未签名 dmg/zip
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
+      - name: Build Windows installer (Inno Setup)
+        if: matrix.target == 'win'
+        shell: pwsh
+        run: |
+          $iscc = Get-ChildItem "C:\Program Files (x86)\Inno Setup*\ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $iscc) { throw "ISCC.exe not found — install Inno Setup 6 on the runner" }
+          Write-Host "Using ISCC: $iscc"
+          & $iscc /DMyArch=x64 electron\installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "x64 安装包构建失败" }
+          # arm64 需要 Inno Setup 6.3+；旧版本跑不了就跳过，不拖垮整个任务
+          & $iscc /DMyArch=arm64 electron\installer.iss
+          if ($LASTEXITCODE -ne 0) { Write-Warning "arm64 安装包构建失败（Inno Setup 需 6.3+），已跳过" }
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
