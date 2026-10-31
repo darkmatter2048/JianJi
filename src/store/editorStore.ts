@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { DEFAULT_ASSET_ID, findHinge, findScreen } from '../lib/assets'
 import { DEFAULT_FONT_ID } from '../lib/fonts'
 import { clamp } from '../lib/format'
+import { notifyDirty } from '../lib/desktop'
 import { probeMediaFile } from '../lib/media'
 import { onGesture } from '../lib/gesture'
 import { applyParsedProject, parseProjectText, toProjectText } from '../lib/projectText'
@@ -705,8 +706,14 @@ export function hasUnsavedChanges(): boolean {
   return unsavedChanges
 }
 
+/** 设置未保存状态，并同步给桌面端主进程（用于「关闭前是否保存」弹窗）。 */
+function setUnsaved(dirty: boolean): void {
+  unsavedChanges = dirty
+  notifyDirty(dirty)
+}
+
 export function markClean(): void {
-  unsavedChanges = false
+  setUnsaved(false)
 }
 
 /** Set while `undo`/`redo` restore a snapshot: restoring is not an edit. */
@@ -728,7 +735,7 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
     if (restoring || dragging) return
     const after = get()
     if (!edited(beforeSnapshot, snapshotOf(after))) return
-    unsavedChanges = true
+    setUnsaved(true)
     rawSet({
       past: [...after.past.slice(-(HISTORY_LIMIT - 1)), beforeSnapshot],
       future: [],
@@ -748,7 +755,7 @@ export const useEditorStore = create<EditorStore>((rawSet, get) => {
     if (!before) return
     const state = store.getState()
     if (!edited(before, snapshotOf(state))) return
-    unsavedChanges = true
+    setUnsaved(true)
     store.setState({
       past: [...state.past.slice(-(HISTORY_LIMIT - 1)), before],
       future: [],

@@ -366,6 +366,7 @@ function serveStatic(req, res, dist) {
 /* ---------------------------------------------------------------- app ---- */
 
 let mainWindow = null
+let httpServer = null
 
 function startServer(root, dist, fontsDir) {
   const server = http.createServer((req, res) => {
@@ -376,6 +377,7 @@ function startServer(root, dist, fontsDir) {
       res.end(String(error?.message || error))
     }
   })
+  httpServer = server
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => resolve(server.address().port))
   })
@@ -402,10 +404,44 @@ function createWindow(url) {
     shell.openExternal(url)
     return { action: 'deny' }
   })
+  // 关闭前：有未保存改动就弹原生对话框（保存 / 不保存 / 取消）。
+  mainWindow.on('close', (event) => {
+    if (!dirty || mainWindow.isDestroyed()) return
+    event.preventDefault()
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: 'warning',
+      title: '未保存的更改',
+      message: '有未保存的更改，是否保存？',
+      buttons: ['保存', '不保存', '取消'],
+      defaultId: 0,
+      cancelId: 2,
+      noLink: true,
+    })
+    if (choice === 0) {
+      // 保存并关闭：让渲染层保存，完成后它会发 save-and-close-done 再关窗。
+      mainWindow.webContents.send('desktop:save-and-close')
+    } else if (choice === 1) {
+      // 不保存：强制关闭（跳过 close/beforeunload，不再二次弹窗）。
+      mainWindow.destroy()
+    }
+    // choice === 2（取消）：什么都不做，窗口保持打开。
+  })
   mainWindow.on('closed', () => {
     mainWindow = null
   })
 }
+
+/* ------------------------------------------------ 未保存状态 / 关闭保护 ---- */
+
+let dirty = false
+
+ipcMain.on('desktop:set-dirty', (_event, value) => {
+  dirty = !!value
+})
+
+ipcMain.on('desktop:save-and-close-done', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.destroy()
+})
 
 /* --------------------------------------------------- 原生工程文件导入 ---- */
 
@@ -459,6 +495,17 @@ ipcMain.handle('desktop:pick-project-folder', async () => {
 })
 
 app.whenReady().then(async () => {
+  // 开发热更模式：ELECTRON_DEV_URL 指向 Vite dev server（HMR + 工作区/字体/AI 中间件），
+  // 直接加载它，不启动内置静态服务器。
+  const devUrl = process.env.ELECTRON_DEV_URL
+  if (devUrl && !app.isPackaged) {
+    createWindow(devUrl)
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow(devUrl)
+    })
+    return
+  }
+
   // 开发模式（electron .）：root 是项目根、dist 是 vite 输出。
   // 打包后：root 是 app 目录，dist 是随包一起的 dist。
   const root = app.getAppPath()
@@ -476,5 +523,16 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin') {
+    // 关掉内置 HTTP 服务，别让它的句柄拖着进程不让退出。
+    if (httpServer) {
+      try {
+        httpServer.close()
+      } catch {
+        /* 已关闭 */
+      }
+      httpServer = null
+    }
+    app.quit()
+  }
 })

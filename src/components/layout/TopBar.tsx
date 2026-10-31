@@ -89,7 +89,10 @@ export function TopBar() {
   }, [editing])
 
   // 离开网站前，未保存的改动要拦一下。
+  // 桌面端不用浏览器的 beforeunload（在 Electron 里会卡住窗口关闭、关不掉），
+  // 桌面端的关闭/未保存保护交给主进程处理。
   useEffect(() => {
+    if (hasNativePicker()) return
     const warn = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges()) return
       event.preventDefault()
