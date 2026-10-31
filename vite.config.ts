@@ -5,7 +5,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path'
 import { homedir } from 'node:os'
 import { Readable } from 'node:stream'
 import type { ServerResponse } from 'node:http'
-import aiProviders from './ai-providers.json'
+import aiProviders from './ai-providers.json' with { type: 'json' }
 
 type AIProviderId = keyof typeof aiProviders.providers
 interface AIProviderSource {
