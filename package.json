@@ -1,7 +1,7 @@
 {
   "name": "jianji",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.3",
   "type": "module",
   "main": "electron/main.cjs",
   "description": "jianji — a Rotato-like 3D video editor for the web",

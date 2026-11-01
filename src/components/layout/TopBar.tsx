@@ -30,6 +30,7 @@ import { ASPECT_RATIO, type ProjectAspect } from '../../types'
 import { hasUnsavedChanges, markClean, useEditorStore } from '../../store/editorStore'
 import { SelectField } from '../ui/controls'
 import { Button, Dialog, DialogContent, Segmented, Tip } from '../ui/kit'
+import { AppInfoButtons } from './AppInfoButtons'
 
 const ASPECTS: Array<{ value: ProjectAspect; label: string }> = [
   { value: '16:9', label: '16:9' },
@@ -388,6 +389,8 @@ export function TopBar() {
           <Save size={15} />
         </button>
       </Tip>
+
+      <AppInfoButtons />
 
       <div className="topbar__project">
         {editing ? (

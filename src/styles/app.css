@@ -129,6 +129,17 @@ select {
   color: var(--text-0);
 }
 
+.app-info__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.app-info__actions a {
+  text-decoration: none;
+}
+
 .topbar__project {
   display: flex;
   align-items: center;
