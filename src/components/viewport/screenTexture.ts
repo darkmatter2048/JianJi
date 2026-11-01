@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import type { ScreenSettings } from '../../types'
+import { clampVideoTime, seekVideoFrame } from '../../lib/videoSeek'
 
 /**
  * Screen sources are redrawn into a canvas that matches the panel's aspect
@@ -13,8 +14,41 @@ import type { ScreenSettings } from '../../types'
  *   - a video can be re-drawn per presented frame with `requestVideoFrameCallback`.
  */
 
-/** Width of the drawing buffer. Taller panels just get a taller canvas. */
-const PANEL_WIDTH = 1024
+interface ScreenTextureOptions {
+  maxTextureSize: number
+  maxAnisotropy: number
+  onTextureChange: (texture: THREE.CanvasTexture) => void
+}
+
+/** Match the source's pixel density after fitting it into the panel. */
+export function screenTextureSize(
+  sourceWidth: number,
+  sourceHeight: number,
+  panelAspect: number,
+  settings: Pick<ScreenSettings, 'fit' | 'rotation'>,
+  maxTextureSize: number,
+): { width: number; height: number } {
+  const aspect = Number.isFinite(panelAspect) && panelAspect > 0 ? panelAspect : 1.6
+  const quarterTurn = Math.abs(Math.round(settings.rotation / 90)) % 2 === 1
+  const boxWidth = quarterTurn ? 1 : aspect
+  const boxHeight = quarterTurn ? aspect : 1
+  const horizontalDensity = sourceWidth / boxWidth
+  const verticalDensity = sourceHeight / boxHeight
+  // Cover crops the source, while contain must preserve every pixel of it.
+  // Tile keeps its existing natural-pixel repeat size on the panel.
+  const density = settings.fit === 'tile'
+    ? 1024 / aspect
+    : settings.fit === 'cover'
+      ? Math.min(horizontalDensity, verticalDensity)
+      : Math.max(horizontalDensity, verticalDensity)
+  const width = aspect * density
+  const height = density
+  const scale = Math.min(1, maxTextureSize / Math.max(width, height))
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  }
+}
 
 export interface ScreenRuntime {
   texture: THREE.CanvasTexture
@@ -112,16 +146,21 @@ export async function videosSettled(): Promise<void> {
 export function createScreenRuntime(
   settings: ScreenSettings,
   panelAspect: number,
-  onError?: (message: string) => void,
+  onError: ((message: string) => void) | undefined,
+  options: ScreenTextureOptions,
 ): ScreenRuntime {
   const canvas = document.createElement('canvas')
-  canvas.width = PANEL_WIDTH
-  canvas.height = Math.max(2, Math.round(PANEL_WIDTH / (panelAspect || 1.6)))
+  canvas.width = 1
+  canvas.height = 1
   const ctx = canvas.getContext('2d')
 
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.anisotropy = 4
+  const createTexture = () => {
+    const next = new THREE.CanvasTexture(canvas)
+    next.colorSpace = THREE.SRGBColorSpace
+    next.anisotropy = options.maxAnisotropy
+    return next
+  }
+  let texture = createTexture()
 
   // 本地 blob / data 源不需要 CORS 属性，设了反而可能加载失败；只有跨域 http(s) 才要。
   const needsCors = /^https?:/i.test(settings.src ?? '')
@@ -130,9 +169,24 @@ export function createScreenRuntime(
   let video: VideoWithFrameCallback | null = null
   let rafHandle = 0
   let videoFrameHandle = 0
+  let pendingSeekTarget: number | null = null
+  let cancelPendingSeek: (() => void) | null = null
 
   const paint = (source: CanvasImageSource, width: number, height: number) => {
-    if (disposed || !ctx) return
+    if (disposed || !ctx || width <= 0 || height <= 0) return
+    const size = screenTextureSize(width, height, panelAspect, settings, options.maxTextureSize)
+    if (canvas.width !== size.width || canvas.height !== size.height) {
+      canvas.width = size.width
+      canvas.height = size.height
+      // Uploaded textures have immutable storage dimensions. Replace the GPU
+      // texture when metadata arrives or an adaptive stream changes resolution.
+      const previous = texture
+      texture = createTexture()
+      options.onTextureChange(texture)
+      previous.dispose()
+    }
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
     drawRotated(ctx, source, width, height, canvas.width, canvas.height, settings)
     texture.needsUpdate = true
   }
@@ -186,28 +240,20 @@ export function createScreenRuntime(
       // Strict: the frame must be the one the timeline asks for, so any drift at
       // all is a seek, and the caller waits on `seeked` before grabbing pixels.
       if (video.paused === false) video.pause()
-      const target = Math.max(0, sourceTime)
+      const target = clampVideoTime(sourceTime, video.duration)
       if (Math.abs(video.currentTime - target) < 1e-4) return
+      if (pendingSeekTarget !== null && Math.abs(pendingSeekTarget - target) < 1e-4) return
+      cancelPendingSeek?.()
       const node = video
-      const seek = new Promise<void>((resolve) => {
-        const done = () => {
-          node.removeEventListener('seeked', done)
-          node.removeEventListener('error', done)
-          pendingSeeks.delete(seek)
-          resolve()
-        }
-        node.addEventListener('seeked', done)
-        node.addEventListener('error', done)
-        // A decoded frame is painted as soon as it lands, so the texture is ready
-        // by the time the seek resolves.
-        node.addEventListener(
-          'seeked',
-          () => paint(node, node.videoWidth, node.videoHeight),
-          { once: true },
-        )
+      pendingSeekTarget = target
+      const request = seekVideoFrame(node, target, () => {
+        paint(node, node.videoWidth, node.videoHeight)
+        pendingSeekTarget = null
+        cancelPendingSeek = null
       })
+      const seek = request.promise.finally(() => pendingSeeks.delete(seek))
+      cancelPendingSeek = request.cancel
       pendingSeeks.add(seek)
-      node.currentTime = target
       return
     }
 
@@ -233,12 +279,14 @@ export function createScreenRuntime(
   }
 
   return {
-    texture,
+    get texture() { return texture },
     syncVideo,
     dispose: () => {
       disposed = true
       if (rafHandle) cancelAnimationFrame(rafHandle)
       if (video) {
+        cancelPendingSeek?.()
+        cancelPendingSeek = null
         if (videoFrameHandle && video.cancelVideoFrameCallback) {
           video.cancelVideoFrameCallback(videoFrameHandle)
         }

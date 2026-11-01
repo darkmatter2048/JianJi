@@ -205,7 +205,7 @@ export function toProjectText(state: EditorSnapshot): string {
     }
     lines.push('', `# ${object.kind === 'model' ? '3D 模型' : object.kind === 'media' ? '图片 / 视频平面' : '文字'}`, declaration.join(' '))
     if (object.kind === 'text' && object.text) {
-      lines.push(`  text ${textFields(object.text)} content="${object.text.content.replace(/"/g, '\\"')}"`)
+      lines.push(`  text ${textFields(object.text)} content=${JSON.stringify(object.text.content)}`)
     }
 
     // The scene belongs to the frame (场景信息也属于关键帧), so it rides on the
@@ -452,11 +452,12 @@ export function parseProjectText(text: string): ParsedProject {
   }
   const byAlias = new Map<string, ParsedObject>()
   let lastObject: ParsedObject | null = null
-  let lineNo = 0
+  const lines = text.split(/\r?\n/)
 
-  for (const rawLine of text.split(/\r?\n/)) {
-    lineNo++
-    const line = rawLine.trim()
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const lineNo = lineIndex + 1
+    const rawLine = lines[lineIndex]
+    let line = rawLine.trim()
     if (!line || line.startsWith('#')) continue
 
     /* scene … — a field list, so its first `=` is *inside* `bg=` */
@@ -467,6 +468,18 @@ export function parseProjectText(text: string): ParsedProject {
 
     /* an indented continuation of the object declared above it */
     if (line.startsWith('text ') || line === 'text') {
+      // Older exports wrote literal newlines inside content="…". Read the
+      // whole quoted value before interpreting any subsequent project commands.
+      if (/(?:^|\s)content="/.test(line)) {
+        line = rawLine.trimStart()
+        while (!textContent(line) && lineIndex + 1 < lines.length) {
+          line += `\n${lines[++lineIndex]}`
+        }
+        if (!textContent(line)) {
+          result.errors.push(`第 ${lineNo} 行：文字 content 缺少结束双引号`)
+          continue
+        }
+      }
       if (!lastObject) {
         result.errors.push(`第 ${lineNo} 行：这一行 text 设置上面没有对象`)
         continue
@@ -658,13 +671,32 @@ export function parseProjectText(text: string): ParsedProject {
   return result
 }
 
+/** Quoted text accepts both escaped strings and legacy literal newlines. */
+function textContent(line: string): RegExpExecArray | null {
+  return /(?:^|\s)content="((?:[^"\\]|\\[\s\S])*)"/.exec(line)
+}
+
+function decodeTextContent(content: string): string {
+  try {
+    return JSON.parse(`"${content}"`) as string
+  } catch {
+    // Legacy exports only escaped quotes; their newlines and backslashes are
+    // literal. Keep them intact when the value is not a JSON string.
+    return content.replace(/\\"/g, '"')
+  }
+}
+
 /** `text font=… size=… content="…"` — a typed slice of `TextSettings`. */
 function parseTextFields(
   line: string,
   existing: Partial<TextSettings> | null,
 ): Partial<TextSettings> {
-  const map = fields(line)
-  const content = /content="((?:[^"\\]|\\.)*)"/.exec(line)
+  const content = textContent(line)
+  // Text may itself contain words like size=10 or color=#000. They are content,
+  // so exclude the quoted value before reading the actual settings.
+  const map = fields(content
+    ? line.slice(0, content.index) + line.slice(content.index + content[0].length)
+    : line)
   const next: Partial<TextSettings> = { ...(existing ?? {}) }
   if (map.has('font')) next.fontId = map.get('font')
   if (map.has('size')) next.size = num(map, 'size', 0.3)
@@ -674,7 +706,7 @@ function parseTextFields(
   if (map.has('spacing')) next.letterSpacing = Math.min(1, Math.max(0, num(map, 'spacing', 0)))
   if (map.has('lineheight')) next.lineHeight = num(map, 'lineheight', 1.25)
   if (map.has('wrap')) next.maxWidth = num(map, 'wrap', 0)
-  if (content) next.content = content[1].replace(/\\"/g, '"')
+  if (content) next.content = decodeTextContent(content[1])
   return next
 }
 

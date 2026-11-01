@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import type { BackgroundSettings } from '../types'
+import { seekVideoFrame } from './videoSeek'
 
 /**
  * The composition's background, as something three.js can draw behind the scene.
@@ -158,16 +159,7 @@ export async function seekBackdropVideo(time: number): Promise<void> {
   const target = backdropVideoTime(time, video.duration)
   if (Math.abs(video.currentTime - target) < 1e-4) return
   if (!video.paused) video.pause()
-  await new Promise<void>((resolve) => {
-    const done = () => {
-      video.removeEventListener('seeked', done)
-      video.removeEventListener('error', done)
-      resolve()
-    }
-    video.addEventListener('seeked', done)
-    video.addEventListener('error', done)
-    video.currentTime = target
-  })
+  await seekVideoFrame(video, target).promise
 }
 
 /**

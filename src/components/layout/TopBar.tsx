@@ -25,7 +25,7 @@ import {
 } from '../../lib/projectImport'
 import { lastKeyframeTime } from '../../lib/keyframes'
 import { toProjectText } from '../../lib/projectText'
-import { downloadBlob, exportVideo } from '../../lib/videoExport'
+import { downloadBlob, exportVideo, recommendedEncoderThreads } from '../../lib/videoExport'
 import { ASPECT_RATIO, type ProjectAspect } from '../../types'
 import { hasUnsavedChanges, markClean, useEditorStore } from '../../store/editorStore'
 import { SelectField } from '../ui/controls'
@@ -49,6 +49,8 @@ const FPS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '120', label: '120' },
 ]
 
+type ExportThreadSetting = 'auto' | '1' | '2' | '4'
+
 /**
  * The top bar: who this is, what the project is called, and the three things you
  * do with a project — bring something in, set the frame, send it out.
@@ -68,6 +70,7 @@ export function TopBar() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [exportThreads, setExportThreads] = useState<ExportThreadSetting>('auto')
   /**
    * The project waiting to be applied, and what it still needs. The text lives in
    * a ref as well as in state: the file inputs' handlers are async, and a stale
@@ -78,7 +81,12 @@ export function TopBar() {
     null,
   )
   /** What the local server can see: the artist's projects, and every media file. */
-  const [progress, setProgress] = useState<{ done: number; total: number; error?: string } | null>(null)
+  const [progress, setProgress] = useState<{
+    done: number
+    total: number
+    threads?: number
+    error?: string
+  } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -303,7 +311,14 @@ export function TopBar() {
     }
     const controller = new AbortController()
     abortRef.current = controller
-    setProgress({ done: 0, total: Math.round(duration * store.timeline.fps) })
+    const requestedThreads = exportThreads === 'auto'
+      ? recommendedEncoderThreads()
+      : Number(exportThreads)
+    setProgress({
+      done: 0,
+      total: Math.round(duration * store.timeline.fps),
+      threads: requestedThreads,
+    })
     try {
       const result = await exportVideo(
         {
@@ -322,8 +337,16 @@ export function TopBar() {
         (time) => useEditorStore.getState().seek(time),
         {
           fps: store.timeline.fps,
+          threads: requestedThreads,
           signal: controller.signal,
-          onProgress: (done, total) => setProgress({ done, total }),
+          onEncoderReady: (threads) => setProgress((current) => current
+            ? { ...current, threads }
+            : current),
+          onProgress: (done, total) => setProgress((current) => ({
+            done,
+            total,
+            threads: current?.threads,
+          })),
         },
       )
       downloadBlob(result.blob, `${project.name || 'movie'}.mp4`)
@@ -479,6 +502,9 @@ export function TopBar() {
                     <p className="ui-dialog__note">
                       {t('逐帧求值后编码，所以画面是确定的；窗口请保持在前台，导出期间别切走。')}
                     </p>
+                    <p className="ui-dialog__note">
+                      {t('编码线程：{n} 个', { n: progress.threads ?? 1 })}
+                    </p>
                   </>
                 )}
                 <div className="export__actions">
@@ -501,6 +527,19 @@ export function TopBar() {
               </div>
             ) : (
               <>
+                <div className="export__threads">
+                  <span>{t('编码线程')}</span>
+                  <Segmented
+                    value={exportThreads}
+                    options={[
+                      { value: 'auto', label: t('自动') },
+                      { value: '1', label: '1' },
+                      { value: '2', label: '2' },
+                      { value: '4', label: '4' },
+                    ]}
+                    onChange={setExportThreads}
+                  />
+                </div>
                 <button type="button" className="export__option" onClick={() => void onExportVideo()}>
                   <Film size={18} />
                   <span>

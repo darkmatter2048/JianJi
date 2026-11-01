@@ -106,6 +106,9 @@ const EN: Record<string, string> = {
     'The project is text: save as .txt and import it on another machine',
   '保存工程': 'Save project',
   '正在导出 MP4 · 第 {done} / {total} 帧': 'Exporting MP4 · frame {done} / {total}',
+  编码线程: 'Encoder threads',
+  自动: 'Auto',
+  '编码线程：{n} 个': '{n} encoder thread(s)',
   '逐帧求值后编码，所以画面是确定的；窗口请保持在前台，导出期间别切走。':
     'Encoded frame-by-frame, so the result is deterministic; keep the window in front while exporting.',
   取消: 'Cancel',

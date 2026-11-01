@@ -1,4 +1,4 @@
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { lastFinishedClip, resolveActiveClip, resolveScreenState } from '../../lib/keyframes'
@@ -18,6 +18,7 @@ import { useObjectTransform } from './useObjectTransform'
  * keyframes, video clips and trims without any of it being special-cased.
  */
 export function MediaObject({ object }: { object: SceneObject }) {
+  const gl = useThree((state) => state.gl)
   const groupRef = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
   const draggingRef = useRef(false)
@@ -49,8 +50,19 @@ export function MediaObject({ object }: { object: SceneObject }) {
       return
     }
     mesh.visible = true
-    const runtime = createScreenRuntime(screen, aspect, (message) =>
-      console.warn(`UAE2 media (${object.name}): ${message}`),
+    const runtime = createScreenRuntime(
+      screen,
+      aspect,
+      (message) => console.warn(`UAE2 media (${object.name}): ${message}`),
+      {
+        maxTextureSize: gl.capabilities.maxTextureSize,
+        maxAnisotropy: gl.capabilities.getMaxAnisotropy(),
+        onTextureChange: (texture) => {
+          material.map = texture
+          material.emissiveMap = texture
+          material.needsUpdate = true
+        },
+      },
     )
     runtimeRef.current = runtime
     material.map = runtime.texture
@@ -67,6 +79,7 @@ export function MediaObject({ object }: { object: SceneObject }) {
     // `brightness` is a uniform, not a new decode, so it is left out on purpose.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    gl,
     aspect,
     object.name,
     screen?.enabled,

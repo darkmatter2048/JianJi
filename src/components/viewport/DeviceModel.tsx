@@ -161,6 +161,7 @@ export function DeviceModel({ object }: { object: SceneObject }) {
   const beginMoveDrag = useObjectDrag(object, draggingRef, dragCleanup)
 
   // drei's OrbitControls with `makeDefault` parks itself here.
+  const gl = useThree((state) => state.gl)
   const controls = useThree((state) => state.controls) as unknown as { enabled: boolean } | null
 
   const selectObject = useEditorStore((state) => state.selectObject)
@@ -217,8 +218,19 @@ export function DeviceModel({ object }: { object: SceneObject }) {
       return
     }
 
-    const runtime = createScreenRuntime(screen, screenSpec.aspect, (message) =>
-      console.warn(`UAE2 screen (${object.name}): ${message}`),
+    const runtime = createScreenRuntime(
+      screen,
+      screenSpec.aspect,
+      (message) => console.warn(`UAE2 screen (${object.name}): ${message}`),
+      {
+        maxTextureSize: gl.capabilities.maxTextureSize,
+        maxAnisotropy: gl.capabilities.getMaxAnisotropy(),
+        onTextureChange: (texture) => {
+          material.map = texture
+          material.emissiveMap = texture
+          material.needsUpdate = true
+        },
+      },
     )
     screenRuntime.current = runtime
 
@@ -244,6 +256,7 @@ export function DeviceModel({ object }: { object: SceneObject }) {
     // `brightness` is deliberately absent: it is a uniform, not a new decode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    gl,
     prepared,
     screenSpec,
     object.name,
